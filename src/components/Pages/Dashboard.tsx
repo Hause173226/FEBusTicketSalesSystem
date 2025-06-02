@@ -14,7 +14,7 @@ export const Dashboard = () => {
     onTimePerformance: 0
   });
   useEffect(() => {
-    const animationDuration = 2000; // 2 seconds
+    const animationDuration = 1500; // 2 seconds
     const frameDuration = 16; // ~60fps
     const totalFrames = Math.round(animationDuration / frameDuration);
     let frame = 0;
