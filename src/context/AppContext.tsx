@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Booking, Route, SearchParams, Seat, User } from '../types';
-import { busLayout, mockUser, routes } from '../data';
+import {  mockUser} from '../data';
 
 interface AppContextProps {
   user: User | null;
@@ -41,8 +41,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         // Mock user login - in a real app, this would validate against a database
-        if (email === 'demo@example.com' && password === 'password') {
-          setUser(mockUser);
+        if (email === 'admin@example.com' && password === 'admin123') {
+          setUser(mockUser); // Admin user
+        } else if (email === 'demo@example.com' && password === 'password') {
+          setUser({
+            id: 'user-2',
+            name: 'Demo User',
+            email: 'demo@example.com',
+            phone: '0901234567',
+            isAdmin: false,
+            bookings: []
+          });
         }
         resolve();
       }, 1000);
@@ -148,7 +157,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           setUser({
             ...user,
-            bookings: updatedBookings,
+            bookings: updatedBookings as unknown as Booking[],
           });
         }
         resolve();

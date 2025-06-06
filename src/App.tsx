@@ -11,10 +11,12 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
   return (
     <Routes>
+      {/* Main Routes */}
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="routes" element={<RoutesPage />} />
@@ -25,8 +27,13 @@ function App() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="profile" element={<ProfilePage />} />
-        <Route path="*" element={<NotFoundPage />} />
       </Route>
+
+      {/* Dashboard Routes */}
+      <Route path="/dashboard/*" element={<DashboardPage />} />
+
+      {/* 404 Route */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

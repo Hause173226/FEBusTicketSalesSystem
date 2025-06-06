@@ -7,7 +7,7 @@ import { useAppContext } from '../context/AppContext';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isLoggedIn, logout } = useAppContext();
+  const { isLoggedIn, logout, user } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,6 +35,11 @@ const Navbar: React.FC = () => {
     { name: 'Đặt vé', path: '/routes' },
     { name: 'Liên hệ', path: '/contact' },
   ];
+
+  // Add dashboard link for admin users
+  if (user?.isAdmin) {
+    navLinks.push({ name: 'Dashboard', path: '/dashboard' });
+  }
 
   const menuVariants = {
     closed: { opacity: 0, x: '100%' },

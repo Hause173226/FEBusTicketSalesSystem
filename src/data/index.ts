@@ -149,9 +149,10 @@ export const busLayout: BusLayout = {
 
 export const mockUser: User = {
   id: 'user-1',
-  name: 'Nguyễn Văn A',
-  email: 'nguyenvana@example.com',
+  name: 'Admin User',
+  email: 'admin@example.com',
   phone: '0901234567',
+  isAdmin: true,
   bookings: [
     {
       id: 'booking-1',

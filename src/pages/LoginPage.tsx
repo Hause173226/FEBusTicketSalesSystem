@@ -132,8 +132,18 @@ const LoginPage: React.FC = () => {
             
             <div className="mt-8 text-center text-sm text-gray-500">
               <p className="mb-2">Đăng nhập để test:</p>
-              <p>Email: demo@example.com</p>
-              <p>Mật khẩu: password</p>
+              <div className="space-y-2">
+                <div>
+                  <p className="font-medium">Admin Account:</p>
+                  <p>Email: admin@example.com</p>
+                  <p>Mật khẩu: admin123</p>
+                </div>
+                <div className="mt-2">
+                  <p className="font-medium">Demo Account:</p>
+                  <p>Email: demo@example.com</p>
+                  <p>Mật khẩu: password</p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
