@@ -1,16 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Clock, CheckCircle, Shield } from "lucide-react";
 import SearchForm from "../components/SearchForm";
 import RouteCard from "../components/RouteCard";
 import { routes } from "../data";
+import { userServices } from "../services/userServices";
 
 const HomePage: React.FC = () => {
   const popularRoutes = routes.filter((route) => route.popular);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await userServices.getUser();
+        console.log("res", res);
+
+        if (res.status === 200) {
+          setUser(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      console.log("User data:", user);
+    }
+  }, [user]);
 
   return (
     <div className="pt-16">
+      {/* Hero Section */}
       <section className="relative h-[500px] md:h-[600px] bg-gray-900 overflow-hidden">
         {/* Background Image */}
         <div
