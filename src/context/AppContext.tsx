@@ -30,45 +30,38 @@ const defaultSearchParams: SearchParams = {
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Lấy user từ localStorage khi load lại trang
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams>(defaultSearchParams);
   const [currentBooking, setCurrentBooking] = useState<Partial<Booking> | null>(null);
 
-  const login = async (email: string, password: string) => {
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        // Mock user login - in a real app, this would validate against a database
-        if (email === 'demo@example.com' && password === 'password') {
-          setUser(mockUser);
-        }
-        resolve();
-      }, 1000);
+  const login = async (phone: string, password: string) => {
+    // Gọi API login ở userServices, userServices đã lưu user vào localStorage
+    await import('../services/userServices').then(async ({ userServices }) => {
+      await userServices.login(phone, password);
+      const storedUser = localStorage.getItem('user');
+      setUser(storedUser ? JSON.parse(storedUser) : null);
     });
   };
 
   const logout = () => {
-    setUser(null);
-    resetBooking();
+    import('../services/userServices').then(({ userServices }) => {
+      userServices.logout();
+      setUser(null);
+      resetBooking();
+    });
   };
 
-  const register = async (name: string, email: string, password: string, phone: string) => {
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        // In a real app, this would create a new user in the database
-        const newUser: User = {
-          id: `user-${Date.now()}`,
-          name,
-          email,
-          phone,
-          bookings: [],
-        };
-        setUser(newUser);
-        resolve();
-      }, 1000);
+  const register = async (name: string, phone: string, email: string, password: string) => {
+    await import('../services/userServices').then(async ({ userServices }) => {
+      await userServices.register(name, phone, email, password);
+      // Sau khi đăng ký, có thể tự động đăng nhập ở đây nếu muốn
+      setUser(null);
     });
   };
 

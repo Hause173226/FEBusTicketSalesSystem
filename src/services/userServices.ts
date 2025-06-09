@@ -36,4 +36,9 @@ export const userServices = {
     localStorage.removeItem('user');
     return api.post("/user/signout");
   },
+
+  register: async (fullName: string, phone: string, email: string, password: string) => {
+    const response = await api.post("/user/signup", { fullName, phone, email, password });
+    return response;
+  },
 };

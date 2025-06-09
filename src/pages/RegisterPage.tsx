@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { User, Mail, Phone, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
+
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -69,24 +70,25 @@ const RegisterPage: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       setLoading(true);
-      
+
+      // Gọi duy nhất hàm register từ context, truyền đúng thứ tự tham số
       await register(
         formData.name,
+        formData.phone,
         formData.email,
-        formData.password,
-        formData.phone
+        formData.password
       );
-      
+
       // Redirect to home page after successful registration
       navigate('/');
-      
+
     } catch (err) {
       setErrors({
         ...errors,
