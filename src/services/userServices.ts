@@ -9,4 +9,35 @@ export const userServices = {
   getUser: () => {
     return api.get("/user");
   },
+  register: (fullName: string, phone: string, email: string, password: string) => {
+    return api.post("/users/signup", {
+      fullName,
+      phone,
+      email,
+      password,
+    });
+  },
+  signin: (email: string, password: string) => {
+    return api.post("/users/signin", {
+      email,
+      password,
+    });
+  },
+  forgotPassword: (email: string) => {
+    return api.post("/users/forgot-password", {
+      email,
+    });
+  },
+  resendOTP: (email: string) => {
+    return api.post("/users/resend-otp", {
+      email,
+    });
+  },
+  resetPassword: (email: string, otp: string, newPassword: string) => {
+    return api.post("/users/reset-password", {
+      email,
+      otp,
+      newPassword,
+    });
+  },
 };

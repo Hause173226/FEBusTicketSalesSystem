@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ArrowLeft, Download, Printer, Bus, Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Bus, Calendar,  MapPin, Users } from 'lucide-react';
 import { routes } from '../data';
 import { useAppContext } from '../context/AppContext';
 

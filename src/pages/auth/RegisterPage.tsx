@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Lock, ArrowRight, AlertCircle } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { userServices } from '../../services/userServices';
+import toast from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +16,6 @@ const RegisterPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   
-  const { register } = useAppContext();
   const navigate = useNavigate();
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,20 +77,31 @@ const RegisterPage: React.FC = () => {
     try {
       setLoading(true);
       
-      await register(
+      await userServices.register(
         formData.name,
+        formData.phone,
         formData.email,
-        formData.password,
-        formData.phone
+        formData.password
       );
       
-      // Redirect to home page after successful registration
-      navigate('/');
+      // Show success toast
+      toast.success('Đăng ký thành công! Vui lòng đăng nhập để tiếp tục.', {
+        duration: 3000,
+        style: {
+          background: '#10B981',
+          color: '#fff',
+        },
+      });
+
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
       
-    } catch (err) {
+    } catch (err: any) {
       setErrors({
         ...errors,
-        form: 'Đăng ký thất bại. Vui lòng thử lại sau.',
+        form: err.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại sau.',
       });
     } finally {
       setLoading(false);
