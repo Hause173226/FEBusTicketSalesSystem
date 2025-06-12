@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../../context/AppContext';
+import { userServices } from '../../services/userServices';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('demo@example.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -29,6 +30,10 @@ const LoginPage: React.FC = () => {
       setLoading(true);
       setError('');
       
+      // Call signin API
+      await userServices.signin(email, password);
+      
+      // Update app context with user data
       await login(email, password);
       
       // Redirect to previous page or home
@@ -97,7 +102,10 @@ const LoginPage: React.FC = () => {
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 </div>
                 <div className="flex justify-end mt-1">
-                  <Link to="/forgot-password" className="text-sm text-blue-700 hover:underline">
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 -mx-2 transition-colors duration-200"
+                  >
                     Quên mật khẩu?
                   </Link>
                 </div>
@@ -128,12 +136,6 @@ const LoginPage: React.FC = () => {
                   Đăng ký ngay
                 </Link>
               </p>
-            </div>
-            
-            <div className="mt-8 text-center text-sm text-gray-500">
-              <p className="mb-2">Đăng nhập để test:</p>
-              <p>Email: demo@example.com</p>
-              <p>Mật khẩu: password</p>
             </div>
           </div>
         </motion.div>
