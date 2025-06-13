@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Mail, Ticket, Edit, LogOut } from 'lucide-react';
+import { User, Ticket, Edit, LogOut } from 'lucide-react'; 
 import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
 
@@ -41,9 +41,9 @@ const ProfilePage: React.FC = () => {
               <div className="p-6 bg-blue-700 text-white">
                 <div className="flex flex-col items-center">
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-700 text-2xl font-bold mb-4">
-                    {user.name.charAt(0)}
+                    {user.fullName.charAt(0)}
                   </div>
-                  <h2 className="text-lg font-semibold">{user.name}</h2>
+                  <h2 className="text-lg font-semibold">{user.fullName}</h2>
                   <p className="text-blue-100">{user.email}</p>
                 </div>
               </div>
@@ -108,30 +108,42 @@ const ProfilePage: React.FC = () => {
                       Chỉnh sửa
                     </button>
                   </div>
-                  
-                  <div className="space-y-6">
-                    <div className="flex items-start">
-                      <User className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Họ và tên</p>
-                        <p className="font-medium text-gray-800">{user.name}</p>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-500">Mã người dùng</p>
+                      <p className="font-medium text-gray-800">{user._id || 'Chưa cập nhật'}</p>
                     </div>
-                    
-                    <div className="flex items-start">
-                      <Mail className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Email</p>
-                        <p className="font-medium text-gray-800">{user.email}</p>
-                      </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Họ và tên</p>
+                      <p className="font-medium text-gray-800">{user.fullName || 'Chưa cập nhật'}</p>
                     </div>
-                    
-                    <div className="flex items-start">
-                      <Phone className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-gray-500">Số điện thoại</p>
-                        <p className="font-medium text-gray-800">{user.phone}</p>
-                      </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Số điện thoại</p>
+                      <p className="font-medium text-gray-800">{user.phone || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium text-gray-800">{user.email || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">CCCD/CMND</p>
+                      <p className="font-medium text-gray-800">{user.citizenId || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Ngày sinh</p>
+                      <p className="font-medium text-gray-800">{user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Giới tính</p>
+                      <p className="font-medium text-gray-800">{user.gender || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Vai trò</p>
+                      <p className="font-medium text-gray-800">{user.role || 'Chưa cập nhật'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-sm text-gray-500">Địa chỉ</p>
+                      <p className="font-medium text-gray-800">{user.address || 'Chưa cập nhật'}</p>
                     </div>
                   </div>
                 </div>

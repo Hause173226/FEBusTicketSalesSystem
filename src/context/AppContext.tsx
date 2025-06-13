@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Booking, Route, SearchParams, Seat, User } from '../types';
-import { busLayout, mockUser, routes } from '../data';
+
 
 interface AppContextProps {
   user: User | null;
@@ -37,16 +37,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentBooking, setCurrentBooking] = useState<Partial<Booking> | null>(null);
 
   const login = async (email: string, password: string) => {
-    // Simulate API call
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        // Mock user login - in a real app, this would validate against a database
-        if (email === 'demo@example.com' && password === 'password') {
-          setUser(mockUser);
+    try {
+      // Gọi API đăng nhập
+      const { userServices } = await import('../services/userServices');
+      const signinRes = await userServices.signin(email, password);
+      if (signinRes.status !== 200 || !signinRes.data) {
+        throw new Error('Đăng nhập thất bại');
+      }
+      // Nếu trả về user object trực tiếp
+      if (signinRes.data.user) {
+        setUser(signinRes.data.user);
+        return;
+      }
+      // Nếu trả về userId thì gọi tiếp getUser
+      if (signinRes.data.userId) {
+        const userRes = await userServices.getUser(signinRes.data.userId);
+        if (userRes.status !== 200 || !userRes.data) {
+          throw new Error('Không lấy được thông tin người dùng');
         }
-        resolve();
-      }, 1000);
-    });
+        setUser(userRes.data);
+        return;
+      }
+      throw new Error('Phản hồi đăng nhập không hợp lệ');
+    } catch (error) {
+      setUser(null);
+      throw error;
+    }
   };
 
   const logout = () => {

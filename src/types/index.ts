@@ -41,10 +41,15 @@ export interface Booking {
 }
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
+  _id: string;
+  fullName: string;
   phone: string;
+  email: string;
+  citizenId: string;
+  dateOfBirth: string;
+  role: string;
+  gender: string;
+  address: string;
   bookings: Booking[];
 }
 

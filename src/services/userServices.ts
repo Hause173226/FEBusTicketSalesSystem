@@ -6,8 +6,8 @@ const api = axios.create({
 });
 
 export const userServices = {
-  getUser: () => {
-    return api.get("/user");
+  getUser: (id: string ) => {
+    return api.get(`/users/${id}`);
   },
   register: (fullName: string, phone: string, email: string, password: string) => {
     return api.post("/users/signup", {
