@@ -7,7 +7,7 @@ import { useAppContext } from '../context/AppContext';
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isLoggedIn, logout } = useAppContext();
+  const { isLoggedIn, user, logout } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -82,7 +82,7 @@ const Navbar: React.FC = () => {
                   className="flex items-center text-sm font-medium text-gray-800 hover:text-blue-600 transition-colors duration-200"
                 >
                   <User className="h-5 w-5 mr-1" />
-                  <span>Tài khoản</span>
+                  <span>{user?.fullName || 'Tài khoản'}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -149,7 +149,7 @@ const Navbar: React.FC = () => {
                     to="/profile"
                     className="py-3 border-b border-gray-200 text-gray-800 hover:text-blue-600 transition-colors duration-200"
                   >
-                    Tài khoản
+                    {user?.fullName || 'Tài khoản'}
                   </Link>
                   <button
                     onClick={handleLogout}
