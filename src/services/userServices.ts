@@ -1,16 +1,16 @@
-import axios from "axios";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_REACT_APP_BASE_URL,
-  withCredentials: true,
-});
+import axiosInstance from "./axiosInstance";
 
 export const userServices = {
-  getUser: (id: string ) => {
-    return api.get(`/users/${id}`);
+  getUser: (id: string) => {
+    return axiosInstance.get(`/users/${id}`);
   },
-  register: (fullName: string, phone: string, email: string, password: string) => {
-    return api.post("/users/signup", {
+  register: (
+    fullName: string,
+    phone: string,
+    email: string,
+    password: string
+  ) => {
+    return axiosInstance.post("/users/signup", {
       fullName,
       phone,
       email,
@@ -18,23 +18,23 @@ export const userServices = {
     });
   },
   signin: (email: string, password: string) => {
-    return api.post("/users/signin", {
+    return axiosInstance.post("/users/signin", {
       email,
       password,
     });
   },
   forgotPassword: (email: string) => {
-    return api.post("/users/forgot-password", {
+    return axiosInstance.post("/users/forgot-password", {
       email,
     });
   },
   resendOTP: (email: string) => {
-    return api.post("/users/resend-otp", {
+    return axiosInstance.post("/users/resend-otp", {
       email,
     });
   },
   resetPassword: (email: string, otp: string, newPassword: string) => {
-    return api.post("/users/reset-password", {
+    return axiosInstance.post("/users/reset-password", {
       email,
       otp,
       newPassword,
