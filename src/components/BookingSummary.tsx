@@ -47,9 +47,9 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
           <MapPin className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm text-gray-500">Từ</p>
-            <p className="font-medium text-gray-800">{route.from}</p>
+            <p className="font-medium text-gray-800">{route.originStation[0].name}</p>
             <p className="text-sm text-gray-500 mt-2">Đến</p>
-            <p className="font-medium text-gray-800">{route.to}</p>
+            <p className="font-medium text-gray-800">{route.destinationStation[0].name}</p>
           </div>
         </div>
         
@@ -57,14 +57,14 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
           <Clock className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm text-gray-500">Giờ khởi hành</p>
-            <p className="font-medium text-gray-800">{route.departureTime}</p>
+            <p className="font-medium text-gray-800">{route.departureDate}</p>
           </div>
         </div>
         
         <div className="pt-2">
           <p className="text-sm text-gray-500 mb-1">Nhà xe</p>
-          <p className="font-medium text-gray-800">{route.company}</p>
-          <p className="text-sm text-gray-500">{route.busType}</p>
+          <p className="font-medium text-gray-800">{route.originStation[0].name}</p>
+          <p className="text-sm text-gray-500">{route.originStation[0].code}</p>
         </div>
         
         <div className="pt-2">
@@ -85,7 +85,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
         <div className="border-t border-gray-200 pt-4 mt-4">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Giá vé ({selectedSeats.length} ghế)</span>
-            <span>{formatPrice(route.price * selectedSeats.length)}</span>
+            <span>{formatPrice(route.basePrice * selectedSeats.length)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Phí dịch vụ</span>

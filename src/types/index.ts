@@ -1,16 +1,16 @@
 export interface Route {
-  id: string;
-  from: string;
-  to: string;
-  departureTime: string;
-  arrivalTime: string;
-  price: number;
-  company: string;
-  busType: string;
-  totalSeats: number;
-  availableSeats: number;
-  popular: boolean;
+  _id: string;
+  name: string;
+  code: string;
+  originStation: Station[];
+  destinationStation: Station[];
+  distanceKm: number;
+  estimatedDuration: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
+
 
 export interface Seat {
   id: string;
@@ -69,3 +69,37 @@ export type City = {
   id: string;
   name: string;
 };
+
+export interface Station {
+  _id: string;
+  name: string;
+  code: string;
+  address: {
+    street: string;
+    ward: string;
+    district: string;
+    city: string;
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Trip {
+  _id: string;
+  route: Route;
+  bus: {
+    _id: string;
+    name: string;
+    type: string;
+    capacity: number;
+    licensePlate: string;
+  };
+  tripCode: string;
+  departureDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  basePrice: number;
+  status: string;
+  availableSeats: number;
+}
