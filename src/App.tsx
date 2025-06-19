@@ -14,6 +14,7 @@ import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import SearchResultsPage from './pages/SearchResultsPage';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="search-results" element={<SearchResultsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

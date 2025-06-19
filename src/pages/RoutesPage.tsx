@@ -25,19 +25,15 @@ const RoutesPage: React.FC = () => {
     'Trên 24 tiếng'
   ];
 
+
+
   useEffect(() => {
     const fetchRoutes = async () => {
-      if (!searchParams.from || !searchParams.to || !searchParams.date) {
-        setRoutes([]);
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
 
       try {
         const result = await getAllRoutes();
-        
         // Apply filters
         let filteredResults = result;
         
@@ -63,6 +59,14 @@ const RoutesPage: React.FC = () => {
               }
               return false;
             });
+          });
+        }
+
+        // Apply search filters if they exist
+        if (searchParams.from && searchParams.to && searchParams.date) {
+          filteredResults = filteredResults.filter((route: Route) => {
+            // Add your search parameter filtering logic here
+            return true; // Replace with actual filtering logic
           });
         }
         

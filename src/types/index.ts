@@ -57,6 +57,7 @@ export interface SearchParams {
   from: string;
   to: string;
   date: Date | null;
+  searchBy: 'city' | 'station';
 }
 
 export interface PaymentMethod {
@@ -68,6 +69,7 @@ export interface PaymentMethod {
 export type City = {
   id: string;
   name: string;
+  
 };
 
 export interface Station {
@@ -90,8 +92,7 @@ export interface Trip {
   route: Route;
   bus: {
     _id: string;
-    name: string;
-    type: string;
+    busType: string;
     capacity: number;
     licensePlate: string;
   };

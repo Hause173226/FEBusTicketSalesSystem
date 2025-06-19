@@ -6,6 +6,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { cities } from '../data';
 import { useAppContext } from '../context/AppContext';
+import { searchTrips } from '../services/tripServices';
 
 const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { searchParams, updateSearchParams } = useAppContext();
@@ -16,6 +17,8 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [isToDropdownOpen, setIsToDropdownOpen] = useState(false);
   const [fromQuery, setFromQuery] = useState('');
   const [toQuery, setToQuery] = useState('');
+  const [searchBy, setSearchBy] = useState<'city' | 'station'>('city');
+  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
 
@@ -46,21 +49,52 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
     setToQuery(fromCity);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!fromCity || !toCity || !departureDate) {
       alert('Vui lòng điền đầy đủ thông tin tìm kiếm');
       return;
     }
+
+    setIsLoading(true);
     
-    updateSearchParams({
-      from: fromCity,
-      to: toCity,
-      date: departureDate,
-    });
-    
-    navigate('/routes');
+    try {
+      const year = departureDate.getFullYear();
+      const month = String(departureDate.getMonth() + 1).padStart(2, '0');
+      const day = String(departureDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+
+      const result = await searchTrips({
+        from: fromCity,
+        to: toCity,
+        date: formattedDate,
+        searchBy: 'city'
+      });
+
+      updateSearchParams({
+        from: fromCity,
+        to: toCity,
+        date: departureDate,
+        searchBy: 'city'
+      });
+
+      navigate('/search-results', { 
+        state: { 
+          searchResults: result,
+          searchParams: {
+            from: fromCity,
+            to: toCity,
+            date: formattedDate
+          }
+        } 
+      });
+    } catch (error) {
+      console.error('Error searching trips:', error);
+      alert('Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -74,14 +108,54 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
       
       <form onSubmit={handleSearch}>
         <div className="grid grid-cols-1 md:grid-cols-9 gap-4">
-          {/* From City */}
+          {/* Search Type Toggle */}
+          <div className="md:col-span-9 flex gap-4 mb-4">
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="form-radio text-blue-600"
+                name="searchType"
+                value="city"
+                checked={searchBy === 'city'}
+                onChange={(e) => {
+                  setSearchBy(e.target.value as 'city' | 'station');
+                  setFromQuery('');
+                  setToQuery('');
+                  setFromCity('');
+                  setToCity('');
+                }}
+              />
+              <span className="ml-2">Tìm theo thành phố</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="form-radio text-blue-600"
+                name="searchType"
+                value="station"
+                checked={searchBy === 'station'}
+                onChange={(e) => {
+                  setSearchBy(e.target.value as 'city' | 'station');
+                  setFromQuery('');
+                  setToQuery('');
+                  setFromCity('');
+                  setToCity('');
+                }}
+              />
+              <span className="ml-2">Tìm theo bến xe</span>
+            </label>
+          </div>
+
+          {/* From City/Station */}
           <div className="relative md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Điểm đi</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {searchBy === 'city' ? 'Điểm đi (Thành phố)' : 'Điểm đi (Bến xe)'}
+            </label>
             <div className="relative">
               <input
                 type="text"
                 className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Chọn điểm đi"
+                placeholder={searchBy === 'city' ? "Chọn thành phố đi" : "Chọn bến xe đi"}
                 value={fromQuery}
                 onChange={(e) => {
                   setFromQuery(e.target.value);
@@ -104,7 +178,9 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
                       </div>
                     ))
                   ) : (
-                    <div className="p-3 text-gray-500">Không tìm thấy thành phố</div>
+                    <div className="p-3 text-gray-500">
+                      {searchBy === 'city' ? 'Không tìm thấy thành phố' : 'Không tìm thấy bến xe'}
+                    </div>
                   )}
                 </div>
               )}
@@ -122,14 +198,16 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             </button>
           </div>
           
-          {/* To City */}
+          {/* To City/Station */}
           <div className="relative md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Điểm đến</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {searchBy === 'city' ? 'Điểm đến (Thành phố)' : 'Điểm đến (Bến xe)'}
+            </label>
             <div className="relative">
               <input
                 type="text"
                 className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Chọn điểm đến"
+                placeholder={searchBy === 'city' ? "Chọn thành phố đến" : "Chọn bến xe đến"}
                 value={toQuery}
                 onChange={(e) => {
                   setToQuery(e.target.value);
@@ -152,7 +230,9 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
                       </div>
                     ))
                   ) : (
-                    <div className="p-3 text-gray-500">Không tìm thấy thành phố</div>
+                    <div className="p-3 text-gray-500">
+                      {searchBy === 'city' ? 'Không tìm thấy thành phố' : 'Không tìm thấy bến xe'}
+                    </div>
                   )}
                 </div>
               )}
@@ -179,10 +259,17 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
         {/* Search Button */}
         <button
           type="submit"
-          className="mt-6 w-full bg-blue-700 text-white py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center justify-center"
+          disabled={isLoading}
+          className={`mt-6 w-full ${isLoading ? 'bg-blue-500' : 'bg-blue-700'} text-white py-3 px-4 rounded-lg hover:bg-blue-800 transition-colors duration-200 flex items-center justify-center`}
         >
-          <Search className="h-5 w-5 mr-2" />
-          Tìm chuyến xe
+          {isLoading ? (
+            <span>Đang tìm kiếm...</span>
+          ) : (
+            <>
+              <Search className="h-5 w-5 mr-2" />
+              Tìm chuyến xe
+            </>
+          )}
         </button>
       </form>
     </motion.div>
