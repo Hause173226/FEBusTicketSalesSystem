@@ -20,6 +20,17 @@ export interface Seat {
   type: 'standard' | 'premium' | 'vip';
 }
 
+export interface BusOperator {
+  _id: string,
+  name: string,
+  phone: string,
+  email: string,
+  address: string,
+  licenseNumber: string,
+  status: string,
+  createdAt: string,
+  updatedAt: string
+}
 export interface BusLayout {
   rows: number;
   columns: number;
@@ -28,16 +39,19 @@ export interface BusLayout {
 }
 
 export interface Booking {
-  id: string;
-  routeId: string;
-  userId: string;
-  seatIds: string[];
-  totalPrice: number;
-  bookingDate: string;
-  travelDate: string;
-  status: 'confirmed' | 'cancelled' | 'completed';
+  _id: string;
+  bookingCode: string;
+  customer: string;
+  trip: string;
+  pickupStation: string;
+  dropoffStation: string;
+  seatNumbers: string[];
+  totalAmount: number;
+  bookingStatus: string;
+  paymentStatus: string;
   paymentMethod: string;
-  qrCode?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -57,6 +71,7 @@ export interface SearchParams {
   from: string;
   to: string;
   date: Date | null;
+  searchBy: 'city' | 'station';
 }
 
 export interface PaymentMethod {
@@ -68,8 +83,18 @@ export interface PaymentMethod {
 export type City = {
   id: string;
   name: string;
+  
 };
 
+export interface Drivers {
+  _id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  licenseNumber: string;
+  status: "active" | "inactive";
+  operator: string;
+}
 export interface Station {
   _id: string;
   name: string;
@@ -90,8 +115,7 @@ export interface Trip {
   route: Route;
   bus: {
     _id: string;
-    name: string;
-    type: string;
+    busType: string;
     capacity: number;
     licensePlate: string;
   };
@@ -102,4 +126,11 @@ export interface Trip {
   basePrice: number;
   status: string;
   availableSeats: number;
+}
+export interface StationWithCity {
+  _id: string;
+  name: string;
+  address: {
+    city: string;
+  };
 }

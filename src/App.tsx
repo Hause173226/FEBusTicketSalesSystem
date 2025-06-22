@@ -14,6 +14,9 @@ import ContactPage from './pages/ContactPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import SearchResultsPage from './pages/SearchResultsPage';
+import BookingDetailPage from './pages/BookingDetailPage';
+import BookingsPage from './pages/BookingsPage';
 
 function App() {
   return (
@@ -24,7 +27,9 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="routes" element={<RoutesPage />} />
           <Route path="booking/:routeId" element={<BookingPage />} />
-          <Route path="payment" element={<PaymentPage />} />
+          <Route path="booking/:id" element={<BookingDetailPage />} />
+          <Route path="bookings" element={<BookingsPage />} />
+          <Route path="payment/:id" element={<PaymentPage />} />
           <Route path="ticket/:bookingId" element={<TicketPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="login" element={<LoginPage />} />
@@ -32,6 +37,8 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="search-results" element={<SearchResultsPage />} />
+          
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

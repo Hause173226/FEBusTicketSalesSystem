@@ -32,6 +32,7 @@ const Navbar: React.FC = () => {
   const navLinks = [
     { name: 'Trang chủ', path: '/' },
     { name: 'Tuyến xe', path: '/routes' },
+    { name: 'Đặt vé', path: '/bookings' },
     { name: 'Vé của tôi', path: '/ticket' },
     { name: 'Liên hệ', path: '/contact' },
   ];

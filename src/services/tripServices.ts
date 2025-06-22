@@ -1,19 +1,18 @@
 import axiosInstance from "./axiosInstance";
 import { Trip } from "../types";
 
-
-export const getTripById = async (id: string): Promise<Trip> => {
-  const response = await axiosInstance.get(`/trip/${id}`);
+export const searchTrips = async (params: {
+  from: string;
+  to: string;
+  date: string;
+  searchBy: 'city' | 'station';
+}): Promise<Trip[]> => {
+  const response = await axiosInstance.get("/trips/search", { params });
   return response.data;
 };
 
-export const searchTrips = async (params: {
-  fromStationId?: string;
-  toStationId?: string;
-  departureDate?: string;
-  routeId?: string;
-}): Promise<Trip[]> => {
-  const response = await axiosInstance.get("/trip/search", { params });
+export const getTripById = async (id: string): Promise<Trip> => {
+  const response = await axiosInstance.get(`/trips/${id}`);
   return response.data;
 };
 
