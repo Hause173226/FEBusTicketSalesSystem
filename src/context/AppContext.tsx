@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Booking, Route, SearchParams, Seat, User, Trip } from '../types';
 
 
@@ -27,21 +27,76 @@ const defaultSearchParams: SearchParams = {
   from: '',
   to: '',
   date: null,
+  searchBy: 'city',
 };
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize user from localStorage if available
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData) : null;
+  });
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams>(defaultSearchParams);
   const [currentBooking, setCurrentBooking] = useState<Partial<Booking> | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Check for existing token and validate/refresh on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const { userServices } = await import('../services/userServices');
+          
+          // Get user data first if not already loaded
+          if (!user) {
+            const userData = localStorage.getItem('user');
+            if (userData) {
+              setUser(JSON.parse(userData));
+            }
+          }
+          
+          // Try to refresh token
+          const refreshResponse = await userServices.refreshToken();
+          
+          // Update token if new one is returned
+          if (refreshResponse.data?.token) {
+            localStorage.setItem('token', refreshResponse.data.token);
+          }
+          
+          // Update user data if returned
+          if (refreshResponse.data?.user) {
+            setUser(refreshResponse.data.user);
+            localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
+          }
+        } catch (error) {
+          console.error('Error initializing auth:', error);
+          // If refresh fails, clear stored data and user state
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+      }
+      setIsInitialized(true);
+    };
+
+    initializeAuth();
+  }, []);
+
+  // Prevent rendering children until initialization is complete
+  if (!isInitialized) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+    </div>;
+  }
 
   const login = async (email: string, password: string) => {
     try {
-      // Gọi API đăng nhập
       const { userServices } = await import('../services/userServices');
       const signinRes = await userServices.signin(email, password);
       if (signinRes.status !== 200 || !signinRes.data) {
@@ -53,18 +108,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         localStorage.setItem('token', signinRes.data.token);
       }
 
-      // Nếu trả về user object trực tiếp
+      // Store user data
       if (signinRes.data.user) {
         setUser(signinRes.data.user);
+        localStorage.setItem('user', JSON.stringify(signinRes.data.user));
         return;
       }
-      // Nếu trả về userId thì gọi tiếp getUser
+
+      // If only userId returned, fetch user data
       if (signinRes.data.userId) {
         const userRes = await userServices.getUser(signinRes.data.userId);
         if (userRes.status !== 200 || !userRes.data) {
           throw new Error('Không thể lấy thông tin người dùng');
         }
         setUser(userRes.data);
+        localStorage.setItem('user', JSON.stringify(userRes.data));
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -72,10 +130,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const logout = () => {
-    // Clear token
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Use the signout service
+      const { signoutService } = await import('../services/signoutService');
+      const result = await signoutService.handleSignout();
+      
+      // Clear user state
+      setUser(null);
+      
+      if (!result.success) {
+        console.error(result.error);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear user state if something goes wrong
+      setUser(null);
+    }
   };
 
   const register = async (name: string, email: string, password: string, phone: string) => {

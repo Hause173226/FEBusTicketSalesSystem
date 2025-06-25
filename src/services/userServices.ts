@@ -23,6 +23,9 @@ export const userServices = {
       password,
     });
   },
+  signout: () => {
+    return axiosInstance.post("/users/signout");
+  },
   forgotPassword: (email: string) => {
     return axiosInstance.post("/users/forgot-password", {
       email,
@@ -39,5 +42,8 @@ export const userServices = {
       otp,
       newPassword,
     });
+  },
+  refreshToken: () => {
+    return axiosInstance.post("/users/refresh-token");
   },
 };
