@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Booking, Route, SearchParams, Seat, User } from '../types';
+import { Booking, Route, SearchParams, Seat, User, Trip } from '../types';
 
 
 interface AppContextProps {
@@ -9,10 +9,12 @@ interface AppContextProps {
   selectedSeats: Seat[];
   searchParams: SearchParams;
   currentBooking: Partial<Booking> | null;
+  selectedTrip: Trip | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (name: string, email: string, password: string, phone: string) => Promise<void>;
   setSelectedRoute: (route: Route | null) => void;
+  setSelectedTrip: (trip: Trip | null) => void;
   toggleSeatSelection: (seat: Seat) => void;
   updateSearchParams: (params: Partial<SearchParams>) => void;
   resetBooking: () => void;
@@ -32,6 +34,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
   const [searchParams, setSearchParams] = useState<SearchParams>(defaultSearchParams);
   const [currentBooking, setCurrentBooking] = useState<Partial<Booking> | null>(null);
@@ -44,6 +47,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (signinRes.status !== 200 || !signinRes.data) {
         throw new Error('Đăng nhập thất bại');
       }
+
+      // Store the token
+      if (signinRes.data.token) {
+        localStorage.setItem('token', signinRes.data.token);
+      }
+
       // Nếu trả về user object trực tiếp
       if (signinRes.data.user) {
         setUser(signinRes.data.user);
@@ -53,21 +62,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (signinRes.data.userId) {
         const userRes = await userServices.getUser(signinRes.data.userId);
         if (userRes.status !== 200 || !userRes.data) {
-          throw new Error('Không lấy được thông tin người dùng');
+          throw new Error('Không thể lấy thông tin người dùng');
         }
         setUser(userRes.data);
-        return;
       }
-      throw new Error('Phản hồi đăng nhập không hợp lệ');
     } catch (error) {
-      setUser(null);
+      console.error('Login error:', error);
       throw error;
     }
   };
 
   const logout = () => {
+    // Clear token
+    localStorage.removeItem('token');
     setUser(null);
-    resetBooking();
   };
 
   const register = async (name: string, email: string, password: string, phone: string) => {
@@ -105,6 +113,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const resetBooking = () => {
     setSelectedRoute(null);
+    setSelectedTrip(null);
     setSelectedSeats([]);
     setCurrentBooking(null);
   };
@@ -118,18 +127,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         const newBooking: Booking = {
-          id: `booking-${Date.now()}`,
-          routeId: selectedRoute.id,
-          userId: user.id,
-          seatIds: selectedSeats.map((seat) => seat.id),
+          _id: `booking-${Date.now()}`,
+          trip: selectedTrip._id,
+          customer: user._id,
+          seatNumber: selectedSeats.map((seat) => seat.id),
           totalPrice: selectedSeats.reduce((sum, seat) => sum + seat.price, 0),
-          bookingDate: new Date().toISOString().split('T')[0],
-          travelDate: searchParams.date
-            ? searchParams.date.toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
-          status: 'confirmed',
-          paymentMethod,
-          qrCode: `${selectedRoute.id}-${user.id}-${Date.now()}`,
+          bookingStatus: 'pending',
+          paymentStatus: 'pending',
         };
 
         // Update user bookings
@@ -176,6 +180,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     user,
     isLoggedIn: !!user,
     selectedRoute,
+    selectedTrip,
     selectedSeats,
     searchParams,
     currentBooking,
@@ -183,6 +188,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     logout,
     register,
     setSelectedRoute,
+    setSelectedTrip,
     toggleSeatSelection,
     updateSearchParams,
     resetBooking,
