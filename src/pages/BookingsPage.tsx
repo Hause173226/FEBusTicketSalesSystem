@@ -4,25 +4,19 @@ import { Bus, Calendar, Clock, MapPin } from 'lucide-react';
 import { Trip } from '../types';
 import { getTripById } from '../services/tripServices';
 import { useAppContext } from '../context/AppContext';
+import SeatSelection from '../components/SeatSelection';
 import { createBooking } from '../services/bookingServices';
-import paymentsServices from '../services/paymentsServices';
-import PaymentMethods from '../components/PaymentMethods';
 
 const BookingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, selectedTrip } = useAppContext();
   const [trip, setTrip] = useState<Trip | null>(selectedTrip);
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const { selectedSeats } = useAppContext();
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank'>('cash');
-  const [isLoading, setIsLoading] = useState(!selectedTrip);
+  const [isTripLoading, setIsTripLoading] = useState(!selectedTrip);
+  const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Generate 40 seats (A1-A20, B1-B20)
-  const allSeats = [
-    ...Array.from({ length: 20 }, (_, i) => `A${i + 1}`),
-    ...Array.from({ length: 20 }, (_, i) => `B${i + 1}`)
-  ];
 
   useEffect(() => {
     const fetchTripDetails = async () => {
@@ -37,7 +31,7 @@ const BookingPage: React.FC = () => {
         console.error('Failed to fetch trip details:', err);
         setError('Không thể tải thông tin chuyến xe. Vui lòng thử lại sau.');
       } finally {
-        setIsLoading(false);
+        setIsTripLoading(false);
       }
     };
 
@@ -51,36 +45,7 @@ const BookingPage: React.FC = () => {
     }
   }, [id, user, navigate, selectedTrip]);
 
-  const handleSeatSelection = (seat: string) => {
-    setSelectedSeats(prev => {
-      if (prev.includes(seat)) {
-        return prev.filter(s => s !== seat);
-      }
-      // Limit selection to maximum 5 seats
-      if (prev.length >= 5) {
-        alert('Bạn chỉ có thể chọn tối đa 5 ghế');
-        return prev;
-      }
-      return [...prev, seat];
-    });
-  };
-
-  const handleBooking = async () => {
-    if (!trip || !user) {
-      alert('Không thể đặt vé. Vui lòng thử lại sau.');
-      return;
-    }
-
-    if (selectedSeats.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 ghế');
-      return;
-    }
-
-    // Store booking data in context and navigate to payment page
-    navigate(`/payment?tripId=${trip._id}&seats=${selectedSeats.join(',')}&amount=${selectedSeats.length * trip.basePrice}`);
-  };
-
-  if (isLoading) {
+  if (isTripLoading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-24 pb-12">
         <div className="container mx-auto px-4">
@@ -188,46 +153,10 @@ const BookingPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Chọn ghế</h2>
               <p className="text-sm text-gray-600 mb-4">Chọn tối đa 5 ghế</p>
 
-              <div className="grid grid-cols-5 gap-4 mb-6">
-                {allSeats.map(seatNumber => {
-                  const isSelected = selectedSeats.includes(seatNumber);
-                  const isBooked = false; // Since bookedSeats is not in the Trip type, we'll default to false
-
-                  return (
-                    <button
-                      key={seatNumber}
-                      onClick={() => !isBooked && handleSeatSelection(seatNumber)}
-                      disabled={isBooked}
-                      className={`
-                        p-3 rounded-lg text-center transition-colors
-                        ${isBooked
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : isSelected
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-50 text-gray-800 hover:bg-blue-50'
-                        }
-                      `}
-                    >
-                      {seatNumber}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gray-50 border border-gray-200 rounded"></div>
-                  <span>Trống</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-600 rounded"></div>
-                  <span>Đã chọn</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-gray-100 rounded"></div>
-                  <span>Đã đặt</span>
-                </div>
-              </div>
+              <SeatSelection 
+                tripId={trip._id}
+                basePrice={trip.basePrice}
+              />
             </div>
 
             {/* Customer Info Card */}
@@ -339,8 +268,8 @@ const BookingPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Ghế đã chọn</h3>
               <div className="flex flex-wrap gap-2">
                 {selectedSeats.map(seat => (
-                  <span key={seat} className="px-3 py-1 bg-blue-100 text-blue-800 rounded">
-                    {seat}
+                  <span key={seat.id} className="px-3 py-1 bg-blue-100 text-blue-800 rounded">
+                    {seat.number}
                   </span>
                 ))}
                 {selectedSeats.length === 0 && (
@@ -351,12 +280,47 @@ const BookingPage: React.FC = () => {
 
             {/* Action Button */}
             <button
-              onClick={handleBooking}
-              disabled={selectedSeats.length === 0}
+              onClick={async () => {
+                try {
+                  setIsBooking(true);
+                  setError(null);
+                  
+                  if (!trip || !user) {
+                    throw new Error('Missing trip or user information');
+                  }
+
+                  const bookingData = {
+                    trip: trip._id,
+                    customer: user._id,
+                    seatNumber: selectedSeats.map(seat => seat.number),
+                    totalPrice: trip.basePrice * selectedSeats.length,
+                    bookingStatus: 'pending',
+                    paymentStatus: paymentMethod === 'cash' ? 'pending' : 'unpaid'
+                  };
+
+                  const response = await createBooking(bookingData);
+                  
+                  // Navigate to appropriate payment page based on payment method
+                  if (paymentMethod === 'bank') {
+                    navigate(`/payment/${response._id}`);
+                  } else {
+                    navigate(`/payment/success/${response._id}`);
+                  }
+                } catch (err) {
+                  console.error('Failed to create booking:', err);
+                  setError('Không thể tạo đơn đặt vé. Vui lòng thử lại sau.');
+                } finally {
+                  setIsBooking(false);
+                }
+              }}
+              disabled={selectedSeats.length === 0 || isBooking}
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              Tiếp tục
+              {isBooking ? 'Đang xử lý...' : 'Tiếp tục'}
             </button>
+            {error && (
+              <p className="mt-2 text-sm text-red-600">{error}</p>
+            )}
           </div>
         </div>
       </div>

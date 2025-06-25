@@ -43,7 +43,9 @@ export const userServices = {
       newPassword,
     });
   },
-  refreshToken: () => {
-    return axiosInstance.post("/users/refresh-token");
+  refreshToken: (refreshToken: string) => {
+    return axiosInstance.post("/users/refresh-token", {
+      refreshToken: refreshToken
+    });
   },
 };

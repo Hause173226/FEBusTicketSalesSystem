@@ -1,83 +1,168 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BusLayout, Seat } from '../types';
+import { Seat } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { seatsServices } from '../services/seatsServices';
 
 interface SeatSelectionProps {
-  busLayout: BusLayout;
+  tripId: string;
+  basePrice: number;
 }
 
-const SeatSelection: React.FC<SeatSelectionProps> = ({ busLayout }) => {
-  const { selectedSeats, toggleSeatSelection } = useAppContext();
+interface SeatType {
+  seatBookingId: string;
+  seatId: string;
+  seatNumber: string;
+  status: string;
+  isAvailable: boolean;
+  isSelected: boolean;
+  isBooked: boolean;
+  lockedUntil: string;
+  bookedBy: string;
+  bookingCode: string;
+}
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
+const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
+  const { selectedSeats, toggleSeatSelection } = useAppContext();
+  const [availableSeats, setAvailableSeats] = useState<SeatType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAvailableSeats = async () => {
+      try {
+        const response = await seatsServices.getAvailableSeats(tripId);
+        
+        if (Array.isArray(response)) {
+          setAvailableSeats(response);
+        } else {
+          setError('Định dạng dữ liệu ghế không hợp lệ');
+        }
+      } catch (err) {
+        setError('Không thể tải thông tin ghế. Vui lòng thử lại sau.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (tripId) {
+      fetchAvailableSeats();
+    }
+  }, [tripId]);
+
+  const handleSeatClick = async (seat: SeatType) => {
+    if (!seat.isAvailable || seat.isBooked) return;
+
+    try {
+      const seatToToggle: Seat = {
+        id: seat.seatId,
+        number: seat.seatNumber,
+        isAvailable: seat.isAvailable,
+        price: basePrice,
+        type: 'standard'
+      };
+
+      if (selectedSeats.some(s => s.id === seat.seatId)) {
+        // Release seat
+        await seatsServices.releaseSeat({
+          tripId,
+          seatNumber: seat.seatNumber
+        });
+        toggleSeatSelection(seatToToggle);
+      } else {
+        // Check if user has already selected 5 seats
+        if (selectedSeats.length >= 5) {
+          alert('Bạn chỉ được chọn tối đa 5 ghế');
+          return;
+        }
+
+        // Select seat
+        try {
+          const response = await seatsServices.selectSeat({
+            tripId,
+            seatNumber: seat.seatNumber
+          });
+          
+          if (response) {
+            toggleSeatSelection(seatToToggle);
+            // Update the seat in availableSeats
+            setAvailableSeats(prevSeats => 
+              prevSeats.map(s => 
+                s.seatId === seat.seatId 
+                  ? { ...s, isSelected: true }
+                  : s
+              )
+            );
+          }
+        } catch (error) {
+          console.error('Failed to select seat:', error);
+          alert('Ghế này đã được người khác chọn. Vui lòng chọn ghế khác.');
+          // Refresh the seat list to get updated status
+          const updatedSeats = await seatsServices.getAvailableSeats(tripId);
+          setAvailableSeats(updatedSeats);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to handle seat selection:', err);
+      alert('Không thể chọn ghế. Vui lòng thử lại sau.');
+    }
   };
 
-  const renderSeat = (seat: Seat, index: number) => {
-    const isSelected = selectedSeats.some((s) => s.id === seat.id);
+  const renderSeat = (seat: SeatType) => {
+    const isSelected = selectedSeats.some((s) => s.id === seat.seatId);
     
-    let seatTypeClass = '';
-    if (seat.type === 'vip') {
-      seatTypeClass = 'bg-purple-100 border-purple-300 text-purple-800';
-    } else if (seat.type === 'premium') {
-      seatTypeClass = 'bg-blue-100 border-blue-300 text-blue-800';
-    } else {
-      seatTypeClass = 'bg-gray-100 border-gray-300 text-gray-800';
-    }
-
     return (
       <motion.button
-        key={seat.id}
+        key={seat.seatId}
         className={`
           w-12 h-12 m-1 rounded-md border-2 flex items-center justify-center text-sm font-medium transition-all
           ${seat.isAvailable ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-30 bg-gray-200 border-gray-400'}
-          ${isSelected ? 'bg-green-200 border-green-500 text-green-800' : seat.isAvailable ? seatTypeClass : ''}
+          ${isSelected ? 'bg-green-200 border-green-500 text-green-800' : seat.isAvailable ? 'bg-gray-100 border-gray-300 text-gray-800' : ''}
         `}
         whileHover={{ scale: seat.isAvailable ? 1.05 : 1 }}
         whileTap={{ scale: seat.isAvailable ? 0.95 : 1 }}
-        onClick={() => seat.isAvailable && toggleSeatSelection(seat)}
-        disabled={!seat.isAvailable}
+        onClick={() => handleSeatClick(seat)}
+        disabled={!seat.isAvailable || seat.isBooked}
       >
-        {seat.number}
+        {seat.seatNumber}
       </motion.button>
     );
   };
 
-  const renderBusLayout = () => {
-    const { rows, columns, seats, aisleAfterColumn } = busLayout;
-    const seatRows = [];
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Đang tải thông tin ghế...</span>
+      </div>
+    );
+  }
 
-    for (let i = 0; i < rows; i++) {
-      const rowSeats = [];
-      for (let j = 0; j < columns; j++) {
-        const seatIndex = i * columns + j;
-        if (seatIndex < seats.length) {
-          rowSeats.push(renderSeat(seats[seatIndex], seatIndex));
-        }
-        
-        // Add aisle after specific column if needed
-        if (aisleAfterColumn && j === aisleAfterColumn - 1) {
-          rowSeats.push(<div key={`aisle-${i}`} className="w-6"></div>);
-        }
-      }
-      seatRows.push(
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-8">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Organize seats into rows (assuming 4 seats per row)
+  const renderSeatLayout = () => {
+    const seatsPerRow = 4;
+    const rows = [];
+    for (let i = 0; i < availableSeats.length; i += seatsPerRow) {
+      const rowSeats = availableSeats.slice(i, i + seatsPerRow);
+      rows.push(
         <div key={`row-${i}`} className="flex justify-center">
-          {rowSeats}
+          {rowSeats.map((seat) => renderSeat(seat))}
         </div>
       );
     }
-
-    return seatRows;
+    return rows;
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">Chọn ghế</h3>
-      
+    <div>
       <div className="flex justify-center mb-6">
         <div className="flex flex-col">
           {/* Bus front */}
@@ -89,7 +174,7 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ busLayout }) => {
           
           {/* Seat layout */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {renderBusLayout()}
+            {renderSeatLayout()}
           </div>
           
           {/* Bus back */}
@@ -103,18 +188,6 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ busLayout }) => {
       
       {/* Seat types legend */}
       <div className="flex flex-wrap justify-center gap-4 mb-6">
-        <div className="flex items-center">
-          <div className="w-6 h-6 bg-purple-100 border-2 border-purple-300 rounded-md mr-2"></div>
-          <span className="text-sm text-gray-600">VIP</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-6 h-6 bg-blue-100 border-2 border-blue-300 rounded-md mr-2"></div>
-          <span className="text-sm text-gray-600">Cao cấp</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-6 h-6 bg-gray-100 border-2 border-gray-300 rounded-md mr-2"></div>
-          <span className="text-sm text-gray-600">Thường</span>
-        </div>
         <div className="flex items-center">
           <div className="w-6 h-6 bg-green-200 border-2 border-green-500 rounded-md mr-2"></div>
           <span className="text-sm text-gray-600">Đã chọn</span>
@@ -142,7 +215,10 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ busLayout }) => {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Tổng tiền:</span>
               <span className="text-lg font-semibold text-blue-700">
-                {formatPrice(selectedSeats.reduce((sum, seat) => sum + seat.price, 0))}
+                {new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: 'VND'
+                }).format(selectedSeats.length * basePrice)}
               </span>
             </div>
           </div>

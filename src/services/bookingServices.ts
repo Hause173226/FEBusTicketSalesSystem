@@ -17,6 +17,9 @@ export const createBooking = async (bookingData: Booking) => {
 };
 
 
-
-
+// Cancel a booking
+export const cancelBooking = async (bookingId: string) => {
+  const response = await axiosInstance.patch(`/booking/cancel/${bookingId}`);
+  return response.data;
+};
 

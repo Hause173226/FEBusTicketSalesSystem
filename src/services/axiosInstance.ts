@@ -1,5 +1,4 @@
 import axios from "axios";
-import { userServices } from "./userServices";
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_REACT_APP_BASE_URL,
@@ -43,60 +42,69 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is not 401 or request already retried, reject
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // If error is not 401 or request already retried or is refresh token request, reject
+    if (error.response?.status !== 401 || 
+        originalRequest._retry || 
+        originalRequest.url?.includes('refresh-token')) {
       return Promise.reject(error);
     }
 
     if (isRefreshing) {
-      // If token refresh is in progress, queue the request
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then(() => {
+      try {
+        // Wait for the ongoing refresh to complete
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
           return axiosInstance(originalRequest);
-        })
-        .catch((err) => {
-          return Promise.reject(err);
         });
+      } catch (err) {
+        return Promise.reject(err);
+      }
     }
 
     originalRequest._retry = true;
     isRefreshing = true;
 
     try {
-      // Call refresh token endpoint
-      const response = await userServices.refreshToken();
+      // Get refresh token from localStorage
+      const refreshToken = localStorage.getItem('refreshToken');
       
-      // Store new token and user data if returned
-      if (response.data?.token) {
-        localStorage.setItem('token', response.data.token);
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
       }
-      if (response.data?.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
+
+      // Call refresh token endpoint with correct format
+      const response = await axios.post(
+        `${import.meta.env.VITE_REACT_APP_BASE_URL}/users/refresh-token`,
+        { refreshToken: refreshToken },
+        { withCredentials: true }
+      );
       
-      // Reset refreshing flag
-      isRefreshing = false;
+      // Store new tokens according to API response format
+      if (response.data?.accessToken && response.data?.refreshToken) {
+        localStorage.setItem('token', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        
+        // Update Authorization header
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+      } else {
+        throw new Error('Invalid token response format');
+      }
       
       // Process queued requests
-      processQueue(null, response.data?.token);
-      
-      // Update the failed request's Authorization header
-      if (response.data?.token) {
-        originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
-      }
-      
-      // Retry the original request
-      return axiosInstance(originalRequest);
-    } catch (refreshError) {
-      // If refresh token fails, clear all auth data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      // Reset refreshing flag and process queue with error
+      processQueue(null, response.data.accessToken);
       isRefreshing = false;
-      processQueue(refreshError);
+      
+      // Retry original request
+      return axiosInstance(originalRequest);
+      
+    } catch (refreshError) {
+      // Only reset flags and process queue with error, but DON'T clear tokens
+      processQueue(refreshError, null);
+      isRefreshing = false;
+      
+      // Just reject the promise without clearing tokens
       return Promise.reject(refreshError);
     }
   }
