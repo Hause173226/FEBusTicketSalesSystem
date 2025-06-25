@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import { Clock, MapPin, Bus, Calendar, Users, ArrowRight, Search } from 'lucide-react';
 import SearchForm from '../components/SearchForm';
 import { Trip } from '../types';
+import { useAppContext } from '../context/AppContext';
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { searchResults, searchParams } = location.state || {};
   const trips = searchResults as Trip[] || [];
+  const { setSelectedTrip } = useAppContext();
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('vi-VN', {
@@ -25,17 +27,24 @@ const SearchResultsPage: React.FC = () => {
   };
 
   const handleBooking = (trip: Trip) => {
-    navigate('/booking', { 
-      state: { 
+    setSelectedTrip(trip);
+    navigate(`/bookings/${trip._id}`, {
+      state: {
         trip,
-        searchParams 
+        searchParams
       }
     });
   };
 
-  const getStationName = (stations: any[] | undefined): string => {
-    if (!stations || !stations.length || !stations[0]) return 'N/A';
-    return stations[0].name || 'N/A';
+  const getStationName = (station: any): string => {
+    if (!station) return 'N/A';
+    return station.name || 'N/A';
+  };
+
+  const getStationAddress = (station: any): string => {
+    if (!station?.address) return 'N/A';
+    const { street, ward, district, city } = station.address;
+    return `${street}, ${ward}, ${district}, ${city}`;
   };
 
   return (
@@ -46,7 +55,7 @@ const SearchResultsPage: React.FC = () => {
           <SearchForm className="mb-0" />
         </div>
       </section>
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -83,7 +92,7 @@ const SearchResultsPage: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-xl font-semibold text-gray-800">
-                        {getStationName(trip.route?.originStation as any) } - {getStationName(trip.route?.destinationStation as any)}  
+                        {getStationName(trip.route?.originStation)} - {getStationName(trip.route?.destinationStation)}
                       </h3>
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
                         {formatDuration(trip.route?.estimatedDuration || 0)}
@@ -94,14 +103,13 @@ const SearchResultsPage: React.FC = () => {
                   <div className="text-right">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-2xl font-bold text-blue-700">{formatPrice(trip.basePrice || 0)}</p>
-                      <span className={`px-2 py-1 rounded text-sm font-medium ${
-                        (trip.availableSeats || 0) > 10 
-                          ? 'bg-green-100 text-green-800'
-                          : (trip.availableSeats || 0) > 0
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                      }`}>
-                        {(trip.availableSeats || 0) > 0 
+                      <span className={`px-2 py-1 rounded text-sm font-medium ${(trip.availableSeats || 0) > 10
+                        ? 'bg-green-100 text-green-800'
+                        : (trip.availableSeats || 0) > 0
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}>
+                        {(trip.availableSeats || 0) > 0
                           ? `Còn ${trip.availableSeats} chỗ`
                           : 'Hết chỗ'
                         }
@@ -109,65 +117,64 @@ const SearchResultsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Clock className="h-5 w-5" />
-                      <span className="font-medium">Thời gian</span>
-                    </div>
-                    <div className="ml-7 space-y-2">
-                      <p className="text-gray-600">
-                        Khởi hành: <span className="font-medium">{trip.departureTime || 'N/A'}</span>
-                      </p>
-                      <p className="text-gray-600">
-                        Đến nơi: <span className="font-medium">{trip.arrivalTime || 'N/A'}</span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Bus className="h-5 w-5" />
-                      <span className="font-medium">Thông tin xe</span>
-                    </div>
-                    <div className="ml-7 space-y-2">
-                      <p className="text-gray-600">
-                        Loại xe: <span className="font-medium">{trip.bus?.busType || 'N/A'}</span>
-                      </p>
-                      <p className="text-gray-600">
-                        Biển số: <span className="font-medium">{trip.bus?.licensePlate || 'N/A'}</span>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Thời gian</p>
+                      <p className="font-medium text-gray-800">
+                        {trip.departureTime} - {trip.arrivalTime}
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Users className="h-5 w-5" />
-                      <span className="font-medium">Sức chứa</span>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Điểm đón</p>
+                      <p className="font-medium text-gray-800">
+                        {getStationName(trip.route?.originStation)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {getStationAddress(trip.route?.originStation)}
+                      </p>
                     </div>
-                    <div className="ml-7 space-y-2">
-                      <p className="text-gray-600">
-                        Tổng số ghế: <span className="font-medium">{trip.bus?.capacity || trip.availableSeats || 0} chỗ</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Điểm trả</p>
+                      <p className="font-medium text-gray-800">
+                        {getStationName(trip.route?.destinationStation)}
                       </p>
-                      <p className="text-gray-600">
-                        Còn trống: <span className="font-medium">{trip.availableSeats || 0} chỗ</span>
+                      <p className="text-sm text-gray-500">
+                        {getStationAddress(trip.route?.destinationStation)}
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Bus className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Thông tin xe</p>
+                      <p className="font-medium text-gray-800">{trip.bus?.busType || 'N/A'}</p>
+                      <p className="text-sm text-gray-500">Biển số: {trip.bus?.licensePlate || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end">
                   <button
-                    className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                      (trip.availableSeats || 0) > 0
-                        ? 'bg-blue-700 text-white hover:bg-blue-800'
-                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    }`}
-                    onClick={() => (trip.availableSeats || 0) > 0 && handleBooking(trip)}
-                    disabled={(trip.availableSeats || 0) === 0}
+                    className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${(trip.availableSeats || 0) > 0
+                      ? 'bg-blue-700 text-white hover:bg-blue-800'
+                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                    onClick={() => handleBooking(trip)}
                   >
-                    Đặt vé
+                    Đặt vé 
+                    
                     <ArrowRight className="h-5 w-5" />
                   </button>
                 </div>
@@ -175,7 +182,7 @@ const SearchResultsPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border border-gray-200 rounded-lg p-8 text-center"

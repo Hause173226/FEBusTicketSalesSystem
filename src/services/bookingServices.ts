@@ -1,18 +1,22 @@
 import axiosInstance from "./axiosInstance";
-import { Booking } from "../types";
 
-export const getBookingById = async (id: string): Promise<Booking> => {
-  const response = await axiosInstance.get(`/bookings/${id}`);
+// Types for booking
+type Booking = {
+  trip: string,
+  customer: string,
+  seatNumber: string[],
+  totalPrice: number,
+  bookingStatus: string,
+  paymentStatus: string
+};
+
+// Create a new booking
+export const createBooking = async (bookingData: Booking) => {
+  const response = await axiosInstance.post('/booking', bookingData);
   return response.data;
 };
 
-export const getUserBookings = async (userId: string): Promise<Booking[]> => {
-  const response = await axiosInstance.get(`/bookings/user/${userId}`);
-  return response.data;
-};
-export const getCustomerById = async (id: string): Promise<any> => {
-  const response = await axiosInstance.get(`/users/${id}`);
-  return response.data;
-};
+
+
 
 

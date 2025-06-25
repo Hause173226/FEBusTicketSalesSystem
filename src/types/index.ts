@@ -40,18 +40,12 @@ export interface BusLayout {
 
 export interface Booking {
   _id: string;
-  bookingCode: string;
-  customer: string;
   trip: string;
-  pickupStation: string;
-  dropoffStation: string;
-  seatNumbers: string[];
-  totalAmount: number;
+  customer: string;
+  seatNumber: string[];
+  totalPrice: number;
   bookingStatus: string;
   paymentStatus: string;
-  paymentMethod: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface User {
@@ -112,12 +106,29 @@ export interface Station {
 
 export interface Trip {
   _id: string;
-  route: Route;
+  route: {
+    _id: string;
+    name: string;
+    code: string;
+    originStation: Station;
+    destinationStation: Station;
+    distanceKm: number;
+    estimatedDuration: number;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+  };
   bus: {
     _id: string;
-    busType: string;
-    capacity: number;
+    operator: string;
     licensePlate: string;
+    busType: string;
+    seatCount: number;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
   };
   tripCode: string;
   departureDate: string;
@@ -126,6 +137,10 @@ export interface Trip {
   basePrice: number;
   status: string;
   availableSeats: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 export interface StationWithCity {
   _id: string;
@@ -133,4 +148,38 @@ export interface StationWithCity {
   address: {
     city: string;
   };
+}
+
+export interface VNPayPaymentRequest {
+  orderId: string;
+  amount: number;
+  orderInfo: string;
+  returnUrl: string;
+  bookingId: string;
+}
+
+export interface VNPayPaymentResponse {
+  code: string;
+  message: string;
+  data?: {
+    paymentUrl?: string;
+  };
+}
+
+export interface VNPayPaymentStatus {
+  isSuccess: boolean;
+  message: string;
+  orderId?: string;
+  paymentTime?: string;
+  transactionId?: string;
+  amount?: number;
+}
+
+export interface BookingPaymentDetails {
+  orderId: string;
+  amount: number;
+  status: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentTime?: string;
 }
