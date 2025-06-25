@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bus, Menu, X, User, LogOut } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Bus, User, LogOut } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { signoutService } from '../services/signoutService';
 
 const Navbar: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { isLoggedIn, user, logout } = useAppContext();
   const location = useLocation();
@@ -20,13 +19,22 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const result = await signoutService.handleSignout();
+      logout();
+      navigate('/');
+      
+      if (!result.success) {
+        // You could show a toast message here if needed
+        console.error(result.error);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Still logout and navigate even if there's an error
+      logout();
+      navigate('/');
+    }
   };
 
   const navLinks = [
@@ -36,11 +44,6 @@ const Navbar: React.FC = () => {
     { name: 'Vé của tôi', path: '/ticket' },
     { name: 'Liên hệ', path: '/contact' },
   ];
-
-  const menuVariants = {
-    closed: { opacity: 0, x: '100%' },
-    open: { opacity: 1, x: 0 },
-  };
 
   return (
     <header
@@ -110,75 +113,8 @@ const Navbar: React.FC = () => {
               </>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-gray-800"
-            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={menuVariants}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-white pt-16 z-40 md:hidden"
-          >
-            <div className="container mx-auto px-4 py-4 flex flex-col">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="py-3 border-b border-gray-200 text-gray-800 hover:text-blue-600 transition-colors duration-200"
-                >
-                  {link.name}
-                </Link>
-              ))}
-              
-              {isLoggedIn ? (
-                <>
-                  <Link
-                    to="/profile"
-                    className="py-3 border-b border-gray-200 text-gray-800 hover:text-blue-600 transition-colors duration-200"
-                  >
-                    {user?.fullName || 'Tài khoản'}
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="py-3 text-left text-gray-800 hover:text-blue-600 transition-colors duration-200"
-                  >
-                    Đăng xuất
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col mt-4">
-                  <Link
-                    to="/login"
-                    className="py-3 px-4 mb-2 text-center text-blue-700 border border-blue-700 rounded-md hover:bg-blue-50 transition-colors duration-200"
-                  >
-                    Đăng nhập
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="py-3 px-4 text-center text-white bg-blue-700 rounded-md hover:bg-blue-800 transition-colors duration-200"
-                  >
-                    Đăng ký
-                  </Link>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 };

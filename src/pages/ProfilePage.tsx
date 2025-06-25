@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { User, Ticket, Edit, LogOut } from 'lucide-react'; 
 import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
+import { signoutService } from '../services/signoutService';
 
 const ProfilePage: React.FC = () => {
   const { user, isLoggedIn, logout } = useAppContext();
@@ -24,9 +25,22 @@ const ProfilePage: React.FC = () => {
     );
   }
   
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const result = await signoutService.handleSignout();
+      logout();
+      navigate('/');
+      
+      if (!result.success) {
+        // You could show a toast message here if needed
+        console.error(result.error);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Still logout and navigate even if there's an error
+      logout();
+      navigate('/');
+    }
   };
   
   return (
@@ -159,7 +173,7 @@ const ProfilePage: React.FC = () => {
                   {user.bookings.length > 0 ? (
                     <div className="space-y-6">
                       {user.bookings.map((booking) => (
-                        <TicketCard key={booking.id} booking={booking} />
+                        <TicketCard key={booking._id} booking={booking} />
                       ))}
                     </div>
                   ) : (
