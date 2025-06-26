@@ -2,13 +2,14 @@ export interface Route {
   _id: string;
   name: string;
   code: string;
-  originStation: Station[];
-  destinationStation: Station[];
+  originStation: Station;
+  destinationStation: Station;
   distanceKm: number;
   estimatedDuration: number;
   status: string;
   createdAt: string;
   updatedAt: string;
+  __v?: number;
 }
 
 
@@ -18,6 +19,7 @@ export interface Seat {
   isAvailable: boolean;
   price: number;
   type: 'standard' | 'premium' | 'vip';
+  tripId: string;
 }
 
 export interface BusOperator {
@@ -40,12 +42,32 @@ export interface BusLayout {
 
 export interface Booking {
   _id: string;
-  trip: string;
-  customer: string;
-  seatNumber: string[];
-  totalPrice: number;
+  bookingCode: string;
+  customer: {
+    _id: string;
+    fullName: string;
+    phone: string;
+    email: string;
+    password?: string;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+    __v?: number;
+    otpCode?: string;
+    otpExpires?: string;
+  };
+  trip: Trip;
+  pickupStation: Station;
+  dropoffStation: Station;
+  seatNumbers: string[];
+  totalAmount: number;
   bookingStatus: string;
   paymentStatus: string;
+  paymentMethod: string;
+  createdAt: string;
+  updatedAt: string;
+  paymentDate?: string;
+  __v?: number;
 }
 
 export interface User {
@@ -106,19 +128,7 @@ export interface Station {
 
 export interface Trip {
   _id: string;
-  route: {
-    _id: string;
-    name: string;
-    code: string;
-    originStation: Station;
-    destinationStation: Station;
-    distanceKm: number;
-    estimatedDuration: number;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    __v: number;
-  };
+  route: Route;
   bus: {
     _id: string;
     operator: string;
@@ -135,12 +145,13 @@ export interface Trip {
   departureTime: string;
   arrivalTime: string;
   basePrice: number;
+  discountPercentage: number;
   status: string;
   availableSeats: number;
-  notes?: string;
+  notes: string;
   createdAt: string;
   updatedAt: string;
-  __v: number;
+  __v?: number;
 }
 export interface StationWithCity {
   _id: string;
@@ -149,21 +160,19 @@ export interface StationWithCity {
     city: string;
   };
 }
+export interface OrderId {
+  orderId: string;
+}
 
 export interface VNPayPaymentRequest {
-  orderId: string;
-  amount: number;
-  orderInfo: string;
-  returnUrl: string;
   bookingId: string;
 }
 
 export interface VNPayPaymentResponse {
   code: string;
   message: string;
-  data?: {
-    paymentUrl?: string;
-  };
+  payUrl: string;
+  orderId: string;
 }
 
 export interface VNPayPaymentStatus {
@@ -176,10 +185,50 @@ export interface VNPayPaymentStatus {
 }
 
 export interface BookingPaymentDetails {
-  orderId: string;
+  _id: string;
+  booking: string;
   amount: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  transactionId: string;
+  notes: string;
+  processedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  gatewayResponse: {
+    vnp_Amount: string;
+    vnp_BankCode: string;
+    vnp_BankTranNo: string;
+    vnp_CardType: string;
+    vnp_OrderInfo: string;
+    vnp_PayDate: string;
+    vnp_ResponseCode: string;
+    vnp_TmnCode: string;
+    vnp_TransactionNo: string;
+    vnp_TransactionStatus: string;
+    vnp_TxnRef: string;
+  };
+}
+
+export interface BookingOrderDetails {
+  orderId: string;
+  bookingCode: string;
   status: string;
-  paymentMethod?: string;
-  transactionId?: string;
-  paymentTime?: string;
+  customer: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  trip: {
+    route: {
+      name: string;
+    };
+    departureDate: string;
+    departureTime: string;
+    arrivalTime: string;
+  };
+  seatNumbers: string[];
+  totalAmount: number;
+  paymentHistory: BookingPaymentDetails;
 }

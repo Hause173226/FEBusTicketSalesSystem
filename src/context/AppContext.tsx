@@ -139,14 +139,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       // Use the signout service
       const { signoutService } = await import('../services/signoutService');
-      const result = await signoutService.handleSignout();
+      await signoutService.handleSignout();
       
       // Clear user state
       setUser(null);
       
-      if (!result.success) {
-        console.error(result.error);
-      }
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state if something goes wrong

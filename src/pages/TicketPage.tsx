@@ -16,12 +16,12 @@ const TicketPage: React.FC = () => {
   const ticketRef = useRef<HTMLDivElement>(null);
   
   // Find booking either from current booking or user bookings
-  const booking = currentBooking?.id === bookingId
+  const booking = currentBooking?._id === bookingId
     ? currentBooking
-    : user?.bookings.find(b => b.id === bookingId);
+    : user?.bookings.find(b => b._id === bookingId);
   
   // Find route information
-  const route = booking?.routeId ? routes.find(r => r.id === booking.routeId) : null;
+  const route = booking?.trip ? routes.find(r => r._id === booking.trip.route._id && r.originStation._id === booking.pickupStation._id && r.destinationStation._id === booking.dropoffStation._id ) : null;
   
   if (!booking || !route) {
     return (

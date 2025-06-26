@@ -7,26 +7,21 @@ import { seatsServices } from '../services/seatsServices';
 interface SeatSelectionProps {
   tripId: string;
   basePrice: number;
+  onConfirmSeats?: (seats: Seat[]) => void;
+  disabled?: boolean;
 }
 
-interface SeatType {
-  seatBookingId: string;
-  seatId: string;
-  seatNumber: string;
-  status: string;
-  isAvailable: boolean;
-  isSelected: boolean;
-  isBooked: boolean;
-  lockedUntil: string;
-  bookedBy: string;
-  bookingCode: string;
-}
+const TEMP_BOOKING_KEY = 'temp_booking_data';
 
-const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
-  const { selectedSeats, toggleSeatSelection } = useAppContext();
-  const [availableSeats, setAvailableSeats] = useState<SeatType[]>([]);
+const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice, onConfirmSeats, disabled = false }) => {
+  const { selectedSeats } = useAppContext();
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
+  const [temporarySelectedSeats, setTemporarySelectedSeats] = useState<Seat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
+  const [confirmedSeatCount, setConfirmedSeatCount] = useState(0);
 
   useEffect(() => {
     const fetchAvailableSeats = async () => {
@@ -34,7 +29,14 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
         const response = await seatsServices.getAvailableSeats(tripId);
         
         if (Array.isArray(response)) {
-          setAvailableSeats(response);
+          setAvailableSeats(response.map(seat => ({
+            id: seat.seatId,
+            number: seat.seatNumber,
+            isAvailable: seat.isAvailable,
+            price: basePrice,
+            type: 'standard',
+            tripId: tripId
+          })));
         } else {
           setError('Định dạng dữ liệu ghế không hợp lệ');
         }
@@ -50,81 +52,63 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
     }
   }, [tripId]);
 
-  const handleSeatClick = async (seat: SeatType) => {
-    if (!seat.isAvailable || seat.isBooked) return;
+  // Reset confirmation message when selecting new seats
+  useEffect(() => {
+    if (temporarySelectedSeats.length > 0) {
+      setShowConfirmationMessage(false);
+    }
+  }, [temporarySelectedSeats]);
 
-    try {
-      const seatToToggle: Seat = {
-        id: seat.seatId,
-        number: seat.seatNumber,
-        isAvailable: seat.isAvailable,
-        price: basePrice,
-        type: 'standard'
-      };
+  const handleSeatClick = (seat: Seat) => {
+    if (!seat.isAvailable) return;
 
-      if (selectedSeats.some(s => s.id === seat.seatId)) {
-        // Release seat
-        await seatsServices.releaseSeat({
-          tripId,
-          seatNumber: seat.seatNumber
-        });
-        toggleSeatSelection(seatToToggle);
-      } else {
-        // Check if user has already selected 5 seats
-        if (selectedSeats.length >= 5) {
-          alert('Bạn chỉ được chọn tối đa 5 ghế');
-          return;
-        }
+    const seatToToggle: Seat = {
+      id: seat.id,
+      number: seat.number,
+      isAvailable: seat.isAvailable,
+      price: basePrice,
+      type: 'standard',
+      tripId: tripId
+    };
 
-        // Select seat
-        try {
-          const response = await seatsServices.selectSeat({
-            tripId,
-            seatNumber: seat.seatNumber
-          });
-          
-          if (response) {
-            toggleSeatSelection(seatToToggle);
-            // Update the seat in availableSeats
-            setAvailableSeats(prevSeats => 
-              prevSeats.map(s => 
-                s.seatId === seat.seatId 
-                  ? { ...s, isSelected: true }
-                  : s
-              )
-            );
-          }
-        } catch (error) {
-          console.error('Failed to select seat:', error);
-          alert('Ghế này đã được người khác chọn. Vui lòng chọn ghế khác.');
-          // Refresh the seat list to get updated status
-          const updatedSeats = await seatsServices.getAvailableSeats(tripId);
-          setAvailableSeats(updatedSeats);
-        }
+    // Check if seat is already in temporary selection
+    const isTemporarySelected = temporarySelectedSeats.some(s => s.id === seat.id);
+
+    if (isTemporarySelected) {
+      // Remove from temporary selection
+      setTemporarySelectedSeats(temporarySelectedSeats.filter(s => s.id !== seat.id));
+    } else {
+      // Check if user has already selected 5 seats
+      if (temporarySelectedSeats.length >= 5) {
+        alert('Bạn chỉ được chọn tối đa 5 ghế');
+        return;
       }
-    } catch (err) {
-      console.error('Failed to handle seat selection:', err);
-      alert('Không thể chọn ghế. Vui lòng thử lại sau.');
+
+      // Add to temporary selection
+      setTemporarySelectedSeats([...temporarySelectedSeats, seatToToggle]);
     }
   };
 
-  const renderSeat = (seat: SeatType) => {
-    const isSelected = selectedSeats.some((s) => s.id === seat.seatId);
+  const renderSeat = (seat: Seat) => {
+    const isTemporarySelected = temporarySelectedSeats.some((s) => s.id === seat.id);
+    const isConfirmedSelected = selectedSeats.some((s) => s.id === seat.id);
     
     return (
       <motion.button
-        key={seat.seatId}
+        key={seat.id}
         className={`
           w-12 h-12 m-1 rounded-md border-2 flex items-center justify-center text-sm font-medium transition-all
           ${seat.isAvailable ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-30 bg-gray-200 border-gray-400'}
-          ${isSelected ? 'bg-green-200 border-green-500 text-green-800' : seat.isAvailable ? 'bg-gray-100 border-gray-300 text-gray-800' : ''}
+          ${isConfirmedSelected ? 'bg-green-500 border-green-600 text-white' : 
+            isTemporarySelected ? 'bg-blue-200 border-blue-500 text-blue-800' : 
+            seat.isAvailable ? 'bg-gray-100 border-gray-300 text-gray-800' : ''}
         `}
         whileHover={{ scale: seat.isAvailable ? 1.05 : 1 }}
         whileTap={{ scale: seat.isAvailable ? 0.95 : 1 }}
         onClick={() => handleSeatClick(seat)}
-        disabled={!seat.isAvailable || seat.isBooked}
+        disabled={!seat.isAvailable || isConfirmedSelected}
       >
-        {seat.seatNumber}
+        {seat.number}
       </motion.button>
     );
   };
@@ -162,7 +146,15 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
   };
 
   return (
-    <div>
+    <div className={`space-y-6 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      {showConfirmationMessage && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-700 font-medium">
+            Đã xác nhận {confirmedSeatCount} ghế thành công!
+          </p>
+        </div>
+      )}
+
       <div className="flex justify-center mb-6">
         <div className="flex flex-col">
           {/* Bus front */}
@@ -189,8 +181,12 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
       {/* Seat types legend */}
       <div className="flex flex-wrap justify-center gap-4 mb-6">
         <div className="flex items-center">
-          <div className="w-6 h-6 bg-green-200 border-2 border-green-500 rounded-md mr-2"></div>
-          <span className="text-sm text-gray-600">Đã chọn</span>
+          <div className="w-6 h-6 bg-green-500 border-2 border-green-600 rounded-md mr-2"></div>
+          <span className="text-sm text-gray-600">Đã xác nhận</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-6 h-6 bg-blue-200 border-2 border-blue-500 rounded-md mr-2"></div>
+          <span className="text-sm text-gray-600">Đang chọn</span>
         </div>
         <div className="flex items-center">
           <div className="w-6 h-6 bg-gray-200 border-2 border-gray-400 rounded-md mr-2 opacity-30"></div>
@@ -200,27 +196,81 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice }) => {
       
       {/* Selected seats summary */}
       <div className="border-t border-gray-200 pt-4">
-        <h4 className="font-medium text-gray-700 mb-2">Ghế đã chọn</h4>
+        <h4 className="font-medium text-gray-700 mb-2">Ghế đang chọn</h4>
         
-        {selectedSeats.length > 0 ? (
+        {temporarySelectedSeats.length > 0 ? (
           <div>
             <div className="flex flex-wrap gap-2 mb-3">
-              {selectedSeats.map((seat) => (
-                <div key={seat.id} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+              {temporarySelectedSeats.map((seat) => (
+                <div key={seat.id} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                   {seat.number}
                 </div>
               ))}
             </div>
             
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center mb-4">
               <span className="text-gray-600">Tổng tiền:</span>
               <span className="text-lg font-semibold text-blue-700">
                 {new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
                   currency: 'VND'
-                }).format(selectedSeats.length * basePrice)}
+                }).format(temporarySelectedSeats.length * basePrice)}
               </span>
             </div>
+
+            <button
+              onClick={async () => {
+                if (onConfirmSeats) {
+                  setIsConfirming(true);
+                  try {
+                    await seatsServices.selectSeat({
+                      tripId,
+                      seatNumbers: temporarySelectedSeats.map(seat => seat.number)
+                    });
+                    onConfirmSeats(temporarySelectedSeats);
+                    
+                    // Store trip and seat information in localStorage
+                    const tempBookingData = {
+                      tripId,
+                      seats: temporarySelectedSeats,
+                      timestamp: new Date().toISOString()
+                    };
+                    localStorage.setItem(TEMP_BOOKING_KEY, JSON.stringify(tempBookingData));
+                    
+                    // Store the count before clearing
+                    const count = temporarySelectedSeats.length;
+                    // Clear temporary selections after confirmation
+                    setTemporarySelectedSeats([]);
+                    // Show confirmation message with correct count
+                    setConfirmedSeatCount(count);
+                    setShowConfirmationMessage(true);
+                  } catch (err: any) {
+                    console.error('Failed to confirm seats:', err);
+                    if (err.response?.status === 400 && err.response?.data?.message?.includes('seat')) {
+                      alert('Một số ghế đã được người khác chọn. Vui lòng chọn ghế khác.');
+                      // Refresh available seats
+                      const updatedSeats = await seatsServices.getAvailableSeats(tripId);
+                      setAvailableSeats(updatedSeats.map(seat => ({
+                        id: seat.seatId,
+                        number: seat.seatNumber,
+                        isAvailable: seat.isAvailable,
+                        price: basePrice,
+                        type: 'standard',
+                        tripId: tripId
+                      })));
+                    } else {
+                      alert('Không thể xác nhận ghế. Vui lòng thử lại.');
+                    }
+                  } finally {
+                    setIsConfirming(false);
+                  }
+                }
+              }}
+              disabled={isConfirming || temporarySelectedSeats.length === 0}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {isConfirming ? 'Đang xác nhận...' : 'Xác nhận chọn ghế'}
+            </button>
           </div>
         ) : (
           <p className="text-gray-500 text-sm">Vui lòng chọn ít nhất một ghế</p>
