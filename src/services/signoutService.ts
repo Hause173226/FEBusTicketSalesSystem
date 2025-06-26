@@ -4,16 +4,15 @@ export const signoutService = {
   /**
    * Handles the complete sign out process
    * - Calls the signout API endpoint
-   * - Clears local storage
+   * - Clears local storage tokens
    * - Handles errors gracefully
    */
   handleSignout: async () => {
     const token = localStorage.getItem('token');
+    const refreshToken = localStorage.getItem('refreshToken');
     
-    // If no token, just clear local storage
-    if (!token) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+    // If no tokens, just return success
+    if (!token && !refreshToken) {
       return { success: true };
     }
     
@@ -21,21 +20,14 @@ export const signoutService = {
       // Call the signout API endpoint
       await userServices.signout();
       
-      // Clear authentication token and user data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return { success: true };
     } catch (error) {
       console.error('Signout error:', error);
-      // Still clear local storage even if API call fails
+    } finally {
+      // Always clear tokens on logout attempt, regardless of API success
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      return {
-        success: false,
-        error: 'Đã xảy ra lỗi khi đăng xuất. Vui lòng thử lại.'
-      };
+      localStorage.removeItem('refreshToken');
     }
+    
+    return { success: true };
   }
 }; 

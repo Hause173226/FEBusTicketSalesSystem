@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
@@ -17,6 +17,10 @@ import SearchResultsPage from './pages/SearchResultsPage';
 import BookingsPage from './pages/BookingsPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
+import VNPayReturnPage from './hooks/VNPayReturnPage';
+import BookingDetailPage from './pages/BookingDetailPage';
+import PaymentDetailsPage from './hooks/PaymentDetailsPage';
+import VNPayPaymentPage from './hooks/VNPayPaymentPage';
 
 function App() {
   return (
@@ -28,17 +32,21 @@ function App() {
           <Route path="routes" element={<RoutesPage />} />
           <Route path="bookings/:id" element={<BookingsPage />} />
           <Route path="payment/:id" element={<PaymentPage />} />
+          <Route path="payment/vnpay/:bookingId" element={<VNPayPaymentPage />} />
+          <Route path="payment/vnpay-return" element={<VNPayReturnPage />} />
           <Route path="payment-success" element={<PaymentSuccessPage />} />
-          <Route path="payment-failed" element={<PaymentFailedPage />} />
+          <Route path="payment/failed" element={<PaymentFailedPage />} />
           <Route path="ticket/:bookingId" element={<TicketPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} /> 
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="search-results" element={<SearchResultsPage />} />
           <Route path="booking" element={<BookingsPage />} />
+          <Route path="booking-details/:orderId" element={<BookingDetailPage />} />
+          <Route path="payment-details/:orderId" element={<PaymentDetailsPage />} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Route>

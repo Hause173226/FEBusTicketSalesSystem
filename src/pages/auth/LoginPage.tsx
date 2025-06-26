@@ -30,16 +30,30 @@ const LoginPage: React.FC = () => {
       setLoading(true);
       setError('');
       
-      // Call signin API
-      await userServices.signin(email, password);
+      // Call signin API once and get the response
+      const signinRes = await userServices.signin(email, password);
       
-      // Update app context with user data
-      await login(email, password);
-      
-      // Redirect to previous page or home
-      navigate(from);
+      // Check if signin was successful
+      if (signinRes.status === 200 && signinRes.data) {
+        // Store tokens in localStorage
+        if (signinRes.data.accessToken) {
+          localStorage.setItem('token', signinRes.data.accessToken);
+        }
+        if (signinRes.data.refreshToken) {
+          localStorage.setItem('refreshToken', signinRes.data.refreshToken);
+        }
+        
+        // Update app context with user data
+        await login(email, password);
+        
+        // Redirect to previous page or home
+        navigate(from);
+      } else {
+        throw new Error('Invalid response from server');
+      }
       
     } catch (err) {
+      console.error('Login error:', err);
       setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.');
     } finally {
       setLoading(false);

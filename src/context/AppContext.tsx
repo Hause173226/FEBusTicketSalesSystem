@@ -49,7 +49,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (token && refreshToken) {
         try {
           const { userServices } = await import('../services/userServices');
           
@@ -61,12 +63,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             }
           }
           
-          // Try to refresh token
-          const refreshResponse = await userServices.refreshToken();
+          // Try to refresh token with correct format
+          const refreshResponse = await userServices.refreshToken(refreshToken);
           
-          // Update token if new one is returned
-          if (refreshResponse.data?.token) {
-            localStorage.setItem('token', refreshResponse.data.token);
+          // Update tokens if new ones are returned
+          if (refreshResponse.data?.accessToken) {
+            localStorage.setItem('token', refreshResponse.data.accessToken);
+          }
+          if (refreshResponse.data?.refreshToken) {
+            localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
           }
           
           // Update user data if returned
@@ -76,10 +81,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         } catch (error) {
           console.error('Error initializing auth:', error);
-          // If refresh fails, clear stored data and user state
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
+          // If refresh fails, don't clear tokens - let the user continue with existing tokens
         }
       }
       setIsInitialized(true);
@@ -103,9 +105,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error('Đăng nhập thất bại');
       }
 
-      // Store the token
-      if (signinRes.data.token) {
-        localStorage.setItem('token', signinRes.data.token);
+      // Store the tokens
+      if (signinRes.data.accessToken) {
+        localStorage.setItem('token', signinRes.data.accessToken);
+      }
+      if (signinRes.data.refreshToken) {
+        localStorage.setItem('refreshToken', signinRes.data.refreshToken);
       }
 
       // Store user data
@@ -134,14 +139,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       // Use the signout service
       const { signoutService } = await import('../services/signoutService');
-      const result = await signoutService.handleSignout();
+      await signoutService.handleSignout();
       
       // Clear user state
       setUser(null);
       
-      if (!result.success) {
-        console.error(result.error);
-      }
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state if something goes wrong
@@ -155,11 +157,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setTimeout(() => {
         // In a real app, this would create a new user in the database
         const newUser: User = {
-          id: `user-${Date.now()}`,
-          name,
+          _id: `user-${Date.now()}`,
+          fullName: name,
           email,
           phone,
           bookings: [],
+          citizenId: '',
+          dateOfBirth: '',
+          role: 'user',
+          gender: 'male',
+          address: '',
         };
         setUser(newUser);
         resolve();
@@ -199,7 +206,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const newBooking: Booking = {
           _id: `booking-${Date.now()}`,
-          trip: selectedTrip._id,
+          trip: selectedTrip?._id || '',
           customer: user._id,
           seatNumber: selectedSeats.map((seat) => seat.id),
           totalPrice: selectedSeats.reduce((sum, seat) => sum + seat.price, 0),
@@ -231,7 +238,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setTimeout(() => {
         if (user) {
           const updatedBookings = user.bookings.map((booking) => {
-            if (booking.id === bookingId) {
+            if (booking._id === bookingId) {
               return { ...booking, status: 'cancelled' };
             }
             return booking;

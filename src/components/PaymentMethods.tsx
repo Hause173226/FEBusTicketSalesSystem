@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { createBooking } from '../services/bookingServices';
-import paymentsServices from '../services/paymentsServices';
-import { VNPayPaymentRequest } from '../types';
-
+import { seatsServices } from '../services/seatsServices';  
 interface PaymentMethodsProps {
-  tripId: string;
-  seatNumbers: string[];
-  totalAmount: number;
+  onPaymentComplete: (bookingId: string) => void;
 }
 
-const PaymentMethods: React.FC<PaymentMethodsProps> = ({ tripId, seatNumbers, totalAmount }) => {
-  const { user } = useAppContext();
+const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) => {
+  const navigate = useNavigate();
+  const { user, selectedTrip, selectedSeats } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVNPayPayment = async () => {
-    if (!tripId || seatNumbers.length === 0 || !user) {
+    if (!selectedTrip || selectedSeats.length === 0 || !user) {
       setError('Thiếu thông tin đặt vé. Vui lòng thử lại.');
       return;
     }
@@ -25,38 +23,29 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({ tripId, seatNumbers, to
     setError(null);
 
     try {
-      // Create booking first
+      const totalAmount = selectedSeats.reduce((total, seat) => total + seat.price, 0);
       const bookingData = {
-        trip: tripId,
+        trip: selectedTrip._id,
         customer: user._id,
-        seatNumber: seatNumbers,
-        totalPrice: totalAmount,
-        bookingStatus: "pending",
-        paymentStatus: "pending",
-        paymentMethod: "vnpay"
+        pickupStation: selectedTrip.route.originStation._id,
+        dropoffStation: selectedTrip.route.destinationStation._id,
+        seatNumbers: selectedSeats.map(seat => seat.number),
+        totalAmount: totalAmount
       };
 
       const booking = await createBooking(bookingData);
 
-      // Create VNPay payment
-      const paymentData = {
-        orderId: booking._id,
-        amount: totalAmount,
-        orderInfo: `Thanh toán vé xe - Mã đơn: ${booking._id}`,
-        returnUrl: `${window.location.origin}/payment-success`,
+      await seatsServices.confirmSeatBooking({
+        tripId: selectedTrip._id,
+        seatNumbers: selectedSeats.map(seat => seat.number),
         bookingId: booking._id
-      };
+      });
 
-      const paymentResponse = await paymentsServices.createVNPayPayment(paymentData as VNPayPaymentRequest);
-      
-      if (paymentResponse.data?.paymentUrl) {
-        window.location.href = paymentResponse.data.paymentUrl;
-      } else {
-        throw new Error('Không nhận được URL thanh toán');
-      }
-    } catch (error) {
-      console.error('Lỗi khi tạo thanh toán:', error);
-      setError('Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại sau.');
+      navigate(`/payment/vnpay/${booking._id}`);
+      onPaymentComplete(booking._id);
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      setError(err.message || 'Không thể xử lý thanh toán. Vui lòng thử lại sau.');
     } finally {
       setIsProcessing(false);
     }

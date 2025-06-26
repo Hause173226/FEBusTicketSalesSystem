@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Route } from '../types';
 import { useAppContext } from '../context/AppContext';
 
+const TEMP_BOOKING_KEY = 'temp_booking_data';
+
 interface RouteCardProps {
   route: Route;
 }
@@ -14,6 +16,15 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
   const { setSelectedRoute } = useAppContext();
 
   const handleSelectRoute = () => {
+    // Save initial booking data to localStorage
+    const tempBookingData = {
+      tripId: route.id,
+      timestamp: new Date().toISOString(),
+      seats: [] // Will be selected in the booking page
+    };
+    localStorage.setItem(TEMP_BOOKING_KEY, JSON.stringify(tempBookingData));
+    
+    // Set the selected route in context and navigate
     setSelectedRoute(route);
     navigate(`/booking/${route.id}`);
   };
@@ -46,7 +57,7 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
           </div>
         </div>
 
-        <div className="flex items-center mb-4">
+        <div className="flex items-center space-x-4 mb-6">
           <div className="flex-1">
             <div className="flex items-center">
               <MapPin className="h-5 w-5 text-gray-400 mr-2" />
