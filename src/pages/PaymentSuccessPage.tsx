@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaCheckCircle } from 'react-icons/fa';
 
 const PaymentSuccessPage: React.FC = () => {
