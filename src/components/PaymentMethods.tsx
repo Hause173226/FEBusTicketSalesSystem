@@ -9,12 +9,12 @@ interface PaymentMethodsProps {
 
 const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) => {
   const navigate = useNavigate();
-  const { user, selectedTrip, selectedSeats } = useAppContext();
+  const { profile, selectedTrip, selectedSeats } = useAppContext();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleVNPayPayment = async () => {
-    if (!selectedTrip || selectedSeats.length === 0 || !user) {
+    if (!selectedTrip || selectedSeats.length === 0 || !profile) {
       setError('Thiếu thông tin đặt vé. Vui lòng thử lại.');
       return;
     }
@@ -26,7 +26,7 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) =>
       const totalAmount = selectedSeats.reduce((total, seat) => total + seat.price, 0);
       const bookingData = {
         trip: selectedTrip._id,
-        customer: user._id,
+        customer: profile._id,
         pickupStation: selectedTrip.route.originStation._id,
         dropoffStation: selectedTrip.route.destinationStation._id,
         seatNumbers: selectedSeats.map(seat => seat.number),

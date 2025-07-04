@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
-interface UserFormProps {
+interface ProfileFormProps {
   onComplete: () => void;
 }
 
-const UserForm: React.FC<UserFormProps> = ({ onComplete }) => {
-  const { user } = useAppContext();
+const ProfileForm: React.FC<ProfileFormProps> = ({ onComplete }) => {
+  const { profile } = useAppContext();
   
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
+    fullName: profile?.fullName || '',
+    email: profile?.email || '',
+    phone: profile?.phone || '',
     address: '',
     note: '',
   });
@@ -37,8 +37,8 @@ const UserForm: React.FC<UserFormProps> = ({ onComplete }) => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'Vui lòng nhập họ tên';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Vui lòng nhập họ tên';
     }
     
     if (!formData.email.trim()) {
@@ -84,14 +84,14 @@ const UserForm: React.FC<UserFormProps> = ({ onComplete }) => {
               type="text"
               id="name"
               name="name"
-              value={formData.name}
+              value={formData.fullName}
               onChange={handleChange}
               className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+                errors.fullName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Nguyễn Văn A"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+            {errors.fullName && <p className="mt-1 text-sm text-red-500">{errors.fullName}</p>}
           </div>
           
           <div>
@@ -175,4 +175,4 @@ const UserForm: React.FC<UserFormProps> = ({ onComplete }) => {
   );
 };
 
-export default UserForm;
+export default ProfileForm;

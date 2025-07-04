@@ -70,17 +70,19 @@ export interface Booking {
   __v?: number;
 }
 
-export interface User {
+export interface Profile {
   _id: string;
   fullName: string;
   phone: string;
   email: string;
-  citizenId: string;
-  dateOfBirth: string;
+  citizenId?: string;
+  dateOfBirth?: string;
+  gender?: "male" | "female";
+  address?: string;
   role: string;
-  gender: string;
-  address: string;
   bookings: Booking[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SearchParams {
@@ -215,11 +217,7 @@ export interface BookingOrderDetails {
   orderId: string;
   bookingCode: string;
   status: string;
-  customer: {
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-  };
+  customer: Profile;
   trip: {
     route: {
       name: string;

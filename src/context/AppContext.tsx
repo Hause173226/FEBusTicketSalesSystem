@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Booking, Route, SearchParams, Seat, User, Trip } from '../types';
+import { Booking, Route, SearchParams, Seat, Profile, Trip } from '../types';
 
 
 interface AppContextProps {
-  user: User | null;
+  profile: Profile | null;
   isLoggedIn: boolean;
   selectedRoute: Route | null;
   selectedSeats: Seat[];
@@ -21,6 +21,7 @@ interface AppContextProps {
   createBooking: (paymentMethod: string) => Promise<Booking>;
   getBookedTickets: () => Booking[];
   cancelBooking: (bookingId: string) => Promise<void>;
+  setProfile: (profile: Profile | null) => void;
 }
 
 const defaultSearchParams: SearchParams = {
@@ -33,10 +34,10 @@ const defaultSearchParams: SearchParams = {
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    // Initialize user from localStorage if available
-    const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    // Initialize profile from localStorage if available
+    const profileData = localStorage.getItem('profile');
+    return profileData ? JSON.parse(profileData) : null;
   });
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -56,10 +57,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const { userServices } = await import('../services/userServices');
           
           // Get user data first if not already loaded
-          if (!user) {
-            const userData = localStorage.getItem('user');
-            if (userData) {
-              setUser(JSON.parse(userData));
+          if (!profile) {
+            const profileData = localStorage.getItem('profile');
+            if (profileData) {
+              setProfile(JSON.parse(profileData));
             }
           }
           
@@ -76,8 +77,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           
           // Update user data if returned
           if (refreshResponse.data?.user) {
-            setUser(refreshResponse.data.user);
-            localStorage.setItem('user', JSON.stringify(refreshResponse.data.user));
+            setProfile(refreshResponse.data.user as Profile);
+            localStorage.setItem('profile', JSON.stringify(refreshResponse.data.user));
           }
         } catch (error) {
           console.error('Error initializing auth:', error);
@@ -115,19 +116,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Store user data
       if (signinRes.data.user) {
-        setUser(signinRes.data.user);
-        localStorage.setItem('user', JSON.stringify(signinRes.data.user));
+        setProfile(signinRes.data.user as Profile);
+        localStorage.setItem('profile', JSON.stringify(signinRes.data.user));
         return;
       }
 
       // If only userId returned, fetch user data
       if (signinRes.data.userId) {
-        const userRes = await userServices.getUser(signinRes.data.userId);
+        const userRes = await userServices.getProfile ();
         if (userRes.status !== 200 || !userRes.data) {
           throw new Error('Không thể lấy thông tin người dùng');
         }
-        setUser(userRes.data);
-        localStorage.setItem('user', JSON.stringify(userRes.data));
+        setProfile(userRes.data as Profile);
+        localStorage.setItem('profile', JSON.stringify(userRes.data));
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -142,12 +143,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await signoutService.handleSignout();
       
       // Clear user state
-      setUser(null);
+      setProfile(null);
       
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state if something goes wrong
-      setUser(null);
+      setProfile(null);
     }
   };
 
@@ -156,7 +157,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         // In a real app, this would create a new user in the database
-        const newUser: User = {
+        const newUser: Profile = {
           _id: `user-${Date.now()}`,
           fullName: name,
           email,
@@ -168,7 +169,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           gender: 'male',
           address: '',
         };
-        setUser(newUser);
+        setProfile(newUser);
         resolve();
       }, 1000);
     });
@@ -200,14 +201,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (!user || !selectedRoute || selectedSeats.length === 0) {
+        if (!profile || !selectedRoute || selectedSeats.length === 0) {
           throw new Error('Missing booking information');
         }
 
         const newBooking: Booking = {
           _id: `booking-${Date.now()}`,
-          trip: selectedTrip?._id || '',
-          customer: user._id,
+          trip: selectedTrip as unknown as Trip,
+          customer: profile as unknown as Profile,
           seatNumber: selectedSeats.map((seat) => seat.id),
           totalPrice: selectedSeats.reduce((sum, seat) => sum + seat.price, 0),
           bookingStatus: 'pending',
@@ -215,10 +216,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
 
         // Update user bookings
-        if (user) {
-          setUser({
-            ...user,
-            bookings: [...user.bookings, newBooking],
+        if (profile) {
+          setProfile({
+            ...profile,
+            bookings: [...profile.bookings, newBooking],
           });
         }
 
@@ -229,23 +230,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const getBookedTickets = () => {
-    return user?.bookings || [];
+    return profile?.bookings || [];
   };
 
   const cancelBooking = async (bookingId: string) => {
     // Simulate API call
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        if (user) {
-          const updatedBookings = user.bookings.map((booking) => {
+        if (profile) {
+          const updatedBookings = profile.bookings.map((booking) => {
             if (booking._id === bookingId) {
               return { ...booking, status: 'cancelled' };
             }
             return booking;
           });
 
-          setUser({
-            ...user,
+          setProfile({
+            ...profile,
             bookings: updatedBookings,
           });
         }
@@ -255,8 +256,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const value = {
-    user,
-    isLoggedIn: !!user,
+    profile,
+    isLoggedIn: !!profile,
     selectedRoute,
     selectedTrip,
     selectedSeats,
@@ -273,6 +274,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     createBooking,
     getBookedTickets,
     cancelBooking,
+    setProfile,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

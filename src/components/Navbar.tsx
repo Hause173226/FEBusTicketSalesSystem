@@ -6,7 +6,7 @@ import { signoutService } from '../services/signoutService';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { isLoggedIn, user, logout } = useAppContext();
+  const { isLoggedIn, profile, logout } = useAppContext();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -84,7 +84,7 @@ const Navbar: React.FC = () => {
                   className="flex items-center text-sm font-medium text-gray-800 hover:text-blue-600 transition-colors duration-200"
                 >
                   <User className="h-5 w-5 mr-1" />
-                  <span>{user?.fullName || 'Tài khoản'}</span>
+                  <span>{profile?.fullName || 'Tài khoản'}</span>
                 </Link>
                 <button
                   onClick={handleLogout}

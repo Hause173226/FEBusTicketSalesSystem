@@ -129,21 +129,21 @@ const BookingDetailPage = () => {
                       <User className="h-5 w-5 text-gray-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-500">Họ và tên</p>
-                        <p className="font-medium text-gray-900">{bookingDetail.customer?.fullName || 'N/A'}</p>
+                        <p className="font-medium text-gray-900">{bookingDetail.customer.fullName || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <Mail className="h-5 w-5 text-gray-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-500">Email</p>
-                        <p className="font-medium text-gray-900">{bookingDetail.customer?.email || 'N/A'}</p>
+                        <p className="font-medium text-gray-900">{bookingDetail.customer.email || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <Phone className="h-5 w-5 text-gray-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-500">Số điện thoại</p>
-                        <p className="font-medium text-gray-900">{bookingDetail.customer?.phoneNumber || 'N/A'}</p>
+                        <p className="font-medium text-gray-900">{bookingDetail.customer.phone || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
