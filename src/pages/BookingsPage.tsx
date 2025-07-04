@@ -11,7 +11,7 @@ const TEMP_BOOKING_KEY = 'temp_booking_data';
 
 const BookingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, selectedTrip } = useAppContext();
+  const { profile, selectedTrip } = useAppContext();
   const [trip, setTrip] = useState<Trip | null>(selectedTrip);
   const [paymentMethod, setPaymentMethod] = useState<'vnpay'>('vnpay');
   const [isTripLoading, setIsTripLoading] = useState(!selectedTrip);
@@ -92,7 +92,7 @@ const BookingPage: React.FC = () => {
       setIsBooking(true);
       setError(null);
       
-      if (!trip || !user) {
+      if (!trip || !profile) {
         throw new Error('Missing trip or user information');
       }
 
@@ -107,7 +107,7 @@ const BookingPage: React.FC = () => {
       // Create booking using the already confirmed seats
       const bookingData = {
         trip: trip._id,
-        customer: user._id,
+        customer: profile._id,
         pickupStation: trip.route.originStation._id,
         dropoffStation: trip.route.destinationStation._id,
         seatNumbers: confirmedSeats.map(seat => seat.number),
@@ -275,7 +275,7 @@ const BookingPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={user?.fullName || ''}
+                    value={profile?.fullName || ''}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
@@ -286,7 +286,7 @@ const BookingPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={user?.phone || ''}
+                    value={profile?.phone || ''}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
@@ -297,7 +297,7 @@ const BookingPage: React.FC = () => {
                   </label>
                   <input
                     type="email"
-                    value={user?.email || ''}
+                    value={profile?.email || ''}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />

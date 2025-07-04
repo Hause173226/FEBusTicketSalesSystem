@@ -1,8 +1,12 @@
 import axiosInstance from "./axiosInstance";
+import { Profile } from "../types";
 
 export const userServices = {
-  getUser: (id: string) => {
-    return axiosInstance.get(`/users/${id}`);
+  getProfile: () => {
+    return axiosInstance.get<Profile>("/users/profile");
+  },
+  updateProfile: (data: Partial<Profile>) => {
+    return axiosInstance.put<Profile>("/users/profile", data);
   },
   register: (
     fullName: string,

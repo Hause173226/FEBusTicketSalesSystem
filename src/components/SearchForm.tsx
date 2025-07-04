@@ -242,6 +242,24 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             </label>
           </div>
 
+          {/* Date Picker */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ngày đi
+            </label>
+            <div className="relative">
+              <DatePicker
+                selected={departureDate}
+                onChange={(date) => setDepartureDate(date)}
+                dateFormat="dd/MM/yyyy"
+                minDate={new Date()}
+                placeholderText="Chọn ngày"
+                className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            </div>
+          </div>
+
           {/* From City/Station */}
           <div className="relative md:col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -250,18 +268,23 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             <div className="relative">
               <input
                 type="text"
-                className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${!departureDate ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder={searchBy === 'city' ? "Chọn thành phố đi" : "Chọn bến xe đi"}
                 value={fromQuery}
                 onChange={(e) => {
+                  if (!departureDate) return;
                   setFromQuery(e.target.value);
                   setIsFromDropdownOpen(true);
                 }}
-                onFocus={() => setIsFromDropdownOpen(true)}
+                onFocus={() => {
+                  if (!departureDate) return;
+                  setIsFromDropdownOpen(true);
+                }}
+                disabled={!departureDate}
               />
-              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <MapPin className={`absolute left-3 top-3 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-gray-400'}`} />
               
-              {isFromDropdownOpen && (
+              {isFromDropdownOpen && departureDate && (
                 <div 
                   className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
                   onMouseDown={(e) => e.preventDefault()}
@@ -292,10 +315,11 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
           <div className="md:col-span-1 flex items-end justify-center pb-3">
             <button
               type="button"
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className={`p-2 rounded-full transition-colors ${!departureDate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
               onClick={handleSwapCities}
+              disabled={!departureDate}
             >
-              <ArrowRight className="h-6 w-6 text-gray-500 transform rotate-90" />
+              <ArrowRight className={`h-6 w-6 transform rotate-90 ${!departureDate ? 'text-gray-300' : 'text-gray-500'}`} />
             </button>
           </div>
 
@@ -307,18 +331,23 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             <div className="relative">
               <input
                 type="text"
-                className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${!departureDate ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder={searchBy === 'city' ? "Chọn thành phố đến" : "Chọn bến xe đến"}
                 value={toQuery}
                 onChange={(e) => {
+                  if (!departureDate) return;
                   setToQuery(e.target.value);
                   setIsToDropdownOpen(true);
                 }}
-                onFocus={() => setIsToDropdownOpen(true)}
+                onFocus={() => {
+                  if (!departureDate) return;
+                  setIsToDropdownOpen(true);
+                }}
+                disabled={!departureDate}
               />
-              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <MapPin className={`absolute left-3 top-3 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-gray-400'}`} />
               
-              {isToDropdownOpen && (
+              {isToDropdownOpen && departureDate && (
                 <div 
                   className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
                   onMouseDown={(e) => e.preventDefault()}
@@ -345,22 +374,13 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             </div>
           </div>
 
-          {/* Date Picker */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ngày đi
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={departureDate}
-                onChange={(date) => setDepartureDate(date)}
-                dateFormat="dd/MM/yyyy"
-                minDate={new Date()}
-                placeholderText="Chọn ngày"
-                className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-            </div>
+          {/* Error Messages */}
+          <div className="md:col-span-9">
+            {!departureDate && (
+              <p className="text-red-500 text-sm mt-1">
+                Vui lòng chọn ngày đi trước khi chọn điểm đi và điểm đến
+              </p>
+            )}
           </div>
 
           {/* Search Button */}
@@ -394,9 +414,9 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
             </button>
             {(!fromCity || !toCity || !departureDate) && (
               <p className="text-red-500 text-sm mt-2 text-center">
-                {!fromCity ? 'Vui lòng chọn điểm đi' 
-                  : !toCity ? 'Vui lòng chọn điểm đến'
-                  : 'Vui lòng chọn ngày đi'}
+                {!departureDate ? 'Vui lòng chọn ngày đi' 
+                  : !fromCity ? 'Vui lòng chọn điểm đi'
+                  : 'Vui lòng chọn điểm đến'}
               </p>
             )}
           </div>
