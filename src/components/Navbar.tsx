@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
       
       if (!result.success) {
         // You could show a toast message here if needed
-        console.error(result.error);
+        console.error(result);
       }
     } catch (error) {
       console.error('Error signing out:', error);
@@ -40,8 +40,6 @@ const Navbar: React.FC = () => {
   const navLinks = [
     { name: 'Trang chủ', path: '/' },
     { name: 'Tuyến xe', path: '/routes' },
-    { name: 'Đặt vé', path: '/bookings' },
-    { name: 'Vé của tôi', path: '/ticket' },
     { name: 'Liên hệ', path: '/contact' },
   ];
 
