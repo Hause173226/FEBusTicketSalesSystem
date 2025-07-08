@@ -200,10 +200,6 @@ const ProfilePage: React.FC = () => {
                   {!isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm text-gray-500">Mã người dùng</p>
-                        <p className="font-medium text-gray-800">{profile._id || 'Chưa cập nhật'}</p>
-                      </div>
-                      <div>
                         <p className="text-sm text-gray-500">Họ và tên</p>
                         <p className="font-medium text-gray-800">{profile.fullName || 'Chưa cập nhật'}</p>
                       </div>
@@ -226,10 +222,6 @@ const ProfilePage: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Giới tính</p>
                         <p className="font-medium text-gray-800">{profile.gender || 'Chưa cập nhật'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Vai trò</p>
-                        <p className="font-medium text-gray-800">{profile.role || 'Chưa cập nhật'}</p>
                       </div>
                       <div className="md:col-span-2">
                         <p className="text-sm text-gray-500">Địa chỉ</p>

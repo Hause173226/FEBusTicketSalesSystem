@@ -195,231 +195,293 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
 
   return (
     <motion.div 
-      className={`bg-white rounded-lg shadow-lg p-6 ${className}`}
+      className={`bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-2xl border border-blue-100 p-8 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Tìm kiếm tuyến xe</h2>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          Tìm kiếm chuyến xe
+        </h2>
+        <p className="text-gray-600">Đặt vé xe khách nhanh chóng và tiện lợi</p>
+      </div>
       
       <form onSubmit={handleSearch}>
-        <div className="grid grid-cols-1 md:grid-cols-9 gap-4">
+        <div className="space-y-6">
           {/* Search Type Toggle */}
-          <div className="md:col-span-9 flex gap-4 mb-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-blue-600"
-                name="searchType"
-                value="city"
-                checked={searchBy === 'city'}
-                onChange={(e) => {
-                  setSearchBy(e.target.value as 'city' | 'station');
-                  setFromQuery('');
-                  setToQuery('');
-                  setFromCity('');
-                  setToCity('');
-                }}
-              />
-              <span className="ml-2">Tìm theo thành phố</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-blue-600"
-                name="searchType"
-                value="station"
-                checked={searchBy === 'station'}
-                onChange={(e) => {
-                  setSearchBy(e.target.value as 'city' | 'station');
-                  setFromQuery('');
-                  setToQuery('');
-                  setFromCity('');
-                  setToCity('');
-                }}
-              />
-              <span className="ml-2">Tìm theo bến xe</span>
-            </label>
-          </div>
-
-          {/* Date Picker */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ngày đi
-            </label>
-            <div className="relative">
-              <DatePicker
-                selected={departureDate}
-                onChange={(date) => setDepartureDate(date)}
-                dateFormat="dd/MM/yyyy"
-                minDate={new Date()}
-                placeholderText="Chọn ngày"
-                className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <div className="flex justify-center">
+            <div className="bg-gray-100 p-1 rounded-xl inline-flex space-x-1">
+              <label className={`px-6 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                searchBy === 'city' 
+                  ? 'bg-white shadow-md text-blue-600 font-medium' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}>
+                <input
+                  type="radio"
+                  className="hidden"
+                  name="searchType"
+                  value="city"
+                  checked={searchBy === 'city'}
+                  onChange={(e) => {
+                    setSearchBy(e.target.value as 'city' | 'station');
+                    setFromQuery('');
+                    setToQuery('');
+                    setFromCity('');
+                    setToCity('');
+                  }}
+                />
+                <span className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Tìm theo thành phố
+                </span>
+              </label>
+              <label className={`px-6 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                searchBy === 'station' 
+                  ? 'bg-white shadow-md text-blue-600 font-medium' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}>
+                <input
+                  type="radio"
+                  className="hidden"
+                  name="searchType"
+                  value="station"
+                  checked={searchBy === 'station'}
+                  onChange={(e) => {
+                    setSearchBy(e.target.value as 'city' | 'station');
+                    setFromQuery('');
+                    setToQuery('');
+                    setFromCity('');
+                    setToCity('');
+                  }}
+                />
+                <span className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Tìm theo bến xe
+                </span>
+              </label>
             </div>
           </div>
 
-          {/* From City/Station */}
-          <div className="relative md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {searchBy === 'city' ? 'Điểm đi (Thành phố)' : 'Điểm đi (Bến xe)'}
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                className={`w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${!departureDate ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                placeholder={searchBy === 'city' ? "Chọn thành phố đi" : "Chọn bến xe đi"}
-                value={fromQuery}
-                onChange={(e) => {
-                  if (!departureDate) return;
-                  setFromQuery(e.target.value);
-                  setIsFromDropdownOpen(true);
-                }}
-                onFocus={() => {
-                  if (!departureDate) return;
-                  setIsFromDropdownOpen(true);
-                }}
-                disabled={!departureDate}
-              />
-              <MapPin className={`absolute left-3 top-3 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-gray-400'}`} />
-              
-              {isFromDropdownOpen && departureDate && (
-                <div 
-                  className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  {isStationsLoading ? (
-                    <div className="p-3 text-gray-500">Đang tải...</div>
-                  ) : filteredFromOptions.length > 0 ? (
-                    filteredFromOptions.map((option) => (
-                      <div
-                        key={option}
-                        className="p-3 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => handleFromCitySelect(option)}
-                      >
-                        {option}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-gray-500">
-                      Không tìm thấy {searchBy === 'city' ? 'thành phố' : 'bến xe'} phù hợp
+          {/* Main Search Fields */}
+          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+              {/* Date Picker */}
+              <div className="lg:col-span-3">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  📅 Ngày khởi hành
+                </label>
+                <div className="relative">
+                  <DatePicker
+                    selected={departureDate}
+                    onChange={(date) => setDepartureDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    minDate={new Date()}
+                    placeholderText="Chọn ngày"
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl pl-12 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 text-gray-700 font-medium"
+                  />
+                  <Calendar className="absolute left-4 top-4 h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+
+              {/* From City/Station */}
+              <div className="relative lg:col-span-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  🚌 {searchBy === 'city' ? 'Thành phố đi' : 'Bến xe đi'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className={`w-full p-4 border-2 rounded-xl pl-12 transition-all duration-200 text-gray-700 font-medium ${
+                      !departureDate 
+                        ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' 
+                        : 'border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300'
+                    }`}
+                    placeholder={searchBy === 'city' ? "Chọn thành phố đi" : "Chọn bến xe đi"}
+                    value={fromQuery}
+                    onChange={(e) => {
+                      if (!departureDate) return;
+                      setFromQuery(e.target.value);
+                      setIsFromDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (!departureDate) return;
+                      setIsFromDropdownOpen(true);
+                    }}
+                    disabled={!departureDate}
+                  />
+                  <MapPin className={`absolute left-4 top-4 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-blue-500'}`} />
+                  
+                  {isFromDropdownOpen && departureDate && (
+                    <div 
+                      className="absolute z-20 mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      {isStationsLoading ? (
+                        <div className="p-4 text-gray-500 text-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                          Đang tải...
+                        </div>
+                      ) : filteredFromOptions.length > 0 ? (
+                        filteredFromOptions.map((option) => (
+                          <div
+                            key={option}
+                            className="p-4 hover:bg-blue-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                            onClick={() => handleFromCitySelect(option)}
+                          >
+                            <span className="text-gray-700 font-medium">{option}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-gray-500 text-center">
+                          Không tìm thấy {searchBy === 'city' ? 'thành phố' : 'bến xe'} phù hợp
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Swap Button */}
-          <div className="md:col-span-1 flex items-end justify-center pb-3">
-            <button
-              type="button"
-              className={`p-2 rounded-full transition-colors ${!departureDate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`}
-              onClick={handleSwapCities}
-              disabled={!departureDate}
-            >
-              <ArrowRight className={`h-6 w-6 transform rotate-90 ${!departureDate ? 'text-gray-300' : 'text-gray-500'}`} />
-            </button>
-          </div>
-
-          {/* To City/Station */}
-          <div className="relative md:col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {searchBy === 'city' ? 'Điểm đến (Thành phố)' : 'Điểm đến (Bến xe)'}
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                className={`w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${!departureDate ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                placeholder={searchBy === 'city' ? "Chọn thành phố đến" : "Chọn bến xe đến"}
-                value={toQuery}
-                onChange={(e) => {
-                  if (!departureDate) return;
-                  setToQuery(e.target.value);
-                  setIsToDropdownOpen(true);
-                }}
-                onFocus={() => {
-                  if (!departureDate) return;
-                  setIsToDropdownOpen(true);
-                }}
-                disabled={!departureDate}
-              />
-              <MapPin className={`absolute left-3 top-3 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-gray-400'}`} />
-              
-              {isToDropdownOpen && departureDate && (
-                <div 
-                  className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
-                  onMouseDown={(e) => e.preventDefault()}
+              {/* Swap Button */}
+              <div className="lg:col-span-1 flex justify-center">
+                <button
+                  type="button"
+                  title="Đổi điểm đi và điểm đến"
+                  className={`p-3 rounded-full transition-all duration-200 ${
+                    !departureDate 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                      : 'hover:bg-blue-100 bg-blue-50 text-blue-600 hover:shadow-md'
+                  }`}
+                  onClick={handleSwapCities}
+                  disabled={!departureDate}
                 >
-                  {isStationsLoading ? (
-                    <div className="p-3 text-gray-500">Đang tải...</div>
-                  ) : filteredToOptions.length > 0 ? (
-                    filteredToOptions.map((option) => (
-                      <div
-                        key={option}
-                        className="p-3 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => handleToCitySelect(option)}
-                      >
-                        {option}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-gray-500">
-                      Không tìm thấy {searchBy === 'city' ? 'thành phố' : 'bến xe'} phù hợp
+                  <ArrowRight className={`h-6 w-6 transform rotate-90 ${!departureDate ? 'text-gray-300' : 'text-blue-600'}`} />
+                </button>
+              </div>
+
+              {/* To City/Station */}
+              <div className="relative lg:col-span-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  🏁 {searchBy === 'city' ? 'Thành phố đến' : 'Bến xe đến'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className={`w-full p-4 border-2 rounded-xl pl-12 transition-all duration-200 text-gray-700 font-medium ${
+                      !departureDate 
+                        ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' 
+                        : 'border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300'
+                    }`}
+                    placeholder={searchBy === 'city' ? "Chọn thành phố đến" : "Chọn bến xe đến"}
+                    value={toQuery}
+                    onChange={(e) => {
+                      if (!departureDate) return;
+                      setToQuery(e.target.value);
+                      setIsToDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (!departureDate) return;
+                      setIsToDropdownOpen(true);
+                    }}
+                    disabled={!departureDate}
+                  />
+                  <MapPin className={`absolute left-4 top-4 h-5 w-5 ${!departureDate ? 'text-gray-300' : 'text-blue-500'}`} />
+                  
+                  {isToDropdownOpen && departureDate && (
+                    <div 
+                      className="absolute z-20 mt-2 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      {isStationsLoading ? (
+                        <div className="p-4 text-gray-500 text-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                          Đang tải...
+                        </div>
+                      ) : filteredToOptions.length > 0 ? (
+                        filteredToOptions.map((option) => (
+                          <div
+                            key={option}
+                            className="p-4 hover:bg-blue-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                            onClick={() => handleToCitySelect(option)}
+                          >
+                            <span className="text-gray-700 font-medium">{option}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-gray-500 text-center">
+                          Không tìm thấy {searchBy === 'city' ? 'thành phố' : 'bến xe'} phù hợp
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
           {/* Error Messages */}
-          <div className="md:col-span-9">
-            {!departureDate && (
-              <p className="text-red-500 text-sm mt-1">
-                Vui lòng chọn ngày đi trước khi chọn điểm đi và điểm đến
-              </p>
-            )}
-          </div>
+          {!departureDate && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Calendar className="h-5 w-5 text-yellow-400" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700 font-medium">
+                    Vui lòng chọn ngày khởi hành trước khi chọn điểm đi và điểm đến
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search Button */}
-          <div className="md:col-span-9">
+          <div className="flex justify-center">
             <button
               type="submit"
               disabled={isLoading || !fromCity || !toCity || !departureDate}
               className={`
-                w-full bg-blue-600 text-white p-4 rounded-lg 
-                flex items-center justify-center gap-2 
-                transform transition-all duration-200
+                relative overflow-hidden px-12 py-4 rounded-xl font-bold text-lg
+                transform transition-all duration-300 min-w-[200px]
                 ${isLoading 
-                  ? 'opacity-70 cursor-not-allowed' 
+                  ? 'bg-gray-400 cursor-not-allowed' 
                   : (!fromCity || !toCity || !departureDate)
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-blue-700 hover:shadow-lg active:scale-98'
+                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
                 }
               `}
             >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span className="text-lg font-medium">Đang tìm kiếm...</span>
-                </>
-              ) : (
-                <>
-                  <Search className="h-6 w-6" />
-                  <span className="text-lg font-medium">Tìm chuyến xe</span>
-                </>
+              <div className="flex items-center justify-center gap-3">
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    <span>Đang tìm kiếm...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-6 w-6" />
+                    <span>Tìm chuyến xe</span>
+                  </>
+                )}
+              </div>
+              
+              {/* Animated background effect */}
+              {!isLoading && fromCity && toCity && departureDate && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 hover:opacity-20 transition-opacity duration-300"></div>
               )}
             </button>
-            {(!fromCity || !toCity || !departureDate) && (
-              <p className="text-red-500 text-sm mt-2 text-center">
-                {!departureDate ? 'Vui lòng chọn ngày đi' 
-                  : !fromCity ? 'Vui lòng chọn điểm đi'
-                  : 'Vui lòng chọn điểm đến'}
-              </p>
-            )}
           </div>
+
+          {/* Validation Message */}
+          {(!fromCity || !toCity || !departureDate) && (
+            <div className="text-center">
+              <p className="text-red-500 text-sm bg-red-50 px-4 py-2 rounded-lg inline-block border border-red-200">
+                {!departureDate ? '📅 Vui lòng chọn ngày khởi hành' 
+                  : !fromCity ? '🚌 Vui lòng chọn điểm đi'
+                  : '🏁 Vui lòng chọn điểm đến'}
+              </p>
+            </div>
+          )}
         </div>
       </form>
     </motion.div>

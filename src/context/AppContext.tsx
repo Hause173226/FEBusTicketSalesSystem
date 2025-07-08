@@ -12,6 +12,7 @@ interface AppContextProps {
   selectedTrip: Trip | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  logoutDueToExpiration: () => void;
   register: (name: string, email: string, password: string, phone: string) => Promise<void>;
   setSelectedRoute: (route: Route | null) => void;
   setSelectedTrip: (trip: Trip | null) => void;
@@ -82,7 +83,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         } catch (error) {
           console.error('Error initializing auth:', error);
-          // If refresh fails, don't clear tokens - let the user continue with existing tokens
+          // If refresh fails, check if it's due to token expiration
+          const { handleTokenExpiration } = await import('../utils/authUtils');
+          if (error instanceof Error && (
+            error.message.includes('refresh') || 
+            error.message.includes('token') || 
+            error.message.includes('401') ||
+            error.message.includes('unauthorized')
+          )) {
+            handleTokenExpiration();
+            return;
+          }
+          // For other errors, just continue with existing tokens
         }
       }
       setIsInitialized(true);
@@ -132,6 +144,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (error) {
       console.error('Login error:', error);
+      // Clear any partial auth data on login failure
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('profile');
       throw error;
     }
   };
@@ -150,6 +166,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Still clear user state if something goes wrong
       setProfile(null);
     }
+  };
+
+  const logoutDueToExpiration = () => {
+    // Clear user state immediately without calling signout service
+    // since the tokens are already expired
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('profile');
+    setProfile(null);
   };
 
   const register = async (name: string, email: string, password: string, phone: string) => {
@@ -265,6 +290,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     currentBooking,
     login,
     logout,
+    logoutDueToExpiration,
     register,
     setSelectedRoute,
     setSelectedTrip,

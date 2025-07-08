@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, MapPin, Bus, Calendar, Users, ArrowRight, Search } from 'lucide-react';
 import SearchForm from '../components/SearchForm';
+import SearchFilters from '../components/searchPage/SearchFilters';
+import SearchResultsHeader from '../components/searchPage/SearchResultsHeader';
+import RouteHeader from '../components/searchPage/RouteHeader';
+import TripCard from '../components/searchPage/TripCard';
+import LoadingSpinner from '../components/searchPage/LoadingSpinner';
+import NoResults from '../components/searchPage/NoResults';
 import { Trip } from '../types';
 import { useAppContext } from '../context/AppContext';
+import '../styles/RangeSlider.css';
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
@@ -12,6 +18,130 @@ const SearchResultsPage: React.FC = () => {
   const { searchResults, searchParams } = location.state || {};
   const trips = searchResults as Trip[] || [];
   const { setSelectedTrip } = useAppContext();
+
+  // Filter states
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 0 });
+  const [isUserInteracted, setIsUserInteracted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Time slots for filtering
+  const timeSlots = [
+    { label: 'Sáng sớm (05:00 - 08:00)', value: 'early-morning', start: 5, end: 8 },
+    { label: 'Buổi sáng (08:00 - 12:00)', value: 'morning', start: 8, end: 12 },
+    { label: 'Buổi chiều (12:00 - 18:00)', value: 'afternoon', start: 12, end: 18 },
+    { label: 'Buổi tối (18:00 - 22:00)', value: 'evening', start: 18, end: 22 },
+    { label: 'Đêm (22:00 - 05:00)', value: 'night', start: 22, end: 29 }
+  ];
+
+  // Get price range from all trips
+  const allPrices = trips.map(trip => trip.basePrice);
+  const actualMaxPrice = Math.max(...allPrices);
+
+  // Set default price range to 0 - 2 million
+  const defaultMinPrice = 0;
+  const defaultMaxPrice = 2000000;
+
+  // Initialize price range with default values
+  React.useEffect(() => {
+    if (trips.length > 0 && priceRange.max === 0) {
+      setPriceRange({ min: defaultMinPrice, max: defaultMaxPrice });
+    }
+  }, [trips, priceRange.max]);
+
+  // Initial loading effect
+  React.useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle price range change
+  const handlePriceRangeChange = (type: 'min' | 'max', value: number) => {
+    if (!isUserInteracted) {
+      setIsUserInteracted(true);
+    }
+
+    if (type === 'min') {
+      const newMin = Math.min(value, priceRange.max);
+      setPriceRange({ ...priceRange, min: newMin });
+    } else {
+      const newMax = Math.max(value, priceRange.min);
+      setPriceRange({ ...priceRange, max: newMax });
+    }
+
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 300);
+  };
+
+  // Handle filter changes with loading
+  const handleFilterChange = () => {
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 300);
+  };
+
+  // Handle filters reset
+  const handleFiltersReset = () => {
+    setSelectedTimeSlots([]);
+    setPriceRange({ min: defaultMinPrice, max: defaultMaxPrice });
+    setIsUserInteracted(false);
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 300);
+  };
+
+  // Filter trips based on selected criteria
+  const filteredTrips = useMemo(() => {
+    return trips.filter(trip => {
+      // Time filter
+      if (selectedTimeSlots.length > 0) {
+        const departureHour = parseInt(trip.departureTime.split(':')[0]);
+        const matchesTimeSlot = selectedTimeSlots.some(slot => {
+          const timeSlot = timeSlots.find(ts => ts.value === slot);
+          if (!timeSlot) return false;
+          
+          if (timeSlot.value === 'night') {
+            return departureHour >= 22 || departureHour < 5;
+          }
+          return departureHour >= timeSlot.start && departureHour < timeSlot.end;
+        });
+        
+        if (!matchesTimeSlot) return false;
+      }
+
+      // Price filter
+      if (trip.basePrice < priceRange.min || trip.basePrice > priceRange.max) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [trips, selectedTimeSlots, priceRange, timeSlots]);
+
+  // Group trips by route
+  const groupedTrips = useMemo(() => {
+    const groups: { [key: string]: Trip[] } = {};
+    filteredTrips.forEach(trip => {
+      const routeKey = `${trip.route?.name || 'Unknown Route'}-${trip.route?._id || 'unknown'}`;
+      if (!groups[routeKey]) {
+        groups[routeKey] = [];
+      }
+      groups[routeKey].push(trip);
+    });
+    
+    // Sort trips within each group by departure time
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => {
+        const timeA = a.departureTime.replace(':', '');
+        const timeB = b.departureTime.replace(':', '');
+        return timeA.localeCompare(timeB);
+      });
+    });
+    
+    return groups;
+  }, [filteredTrips]);
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('vi-VN', {
@@ -57,152 +187,83 @@ const SearchResultsPage: React.FC = () => {
       </section>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">Kết quả tìm kiếm</h2>
-            <div className="text-gray-600">
-              {trips.length} chuyến xe được tìm thấy
-            </div>
+        {/* Header */}
+        <SearchResultsHeader 
+          groupedTrips={groupedTrips}
+          trips={trips}
+          searchParams={searchParams}
+        />
+
+        {/* Main Content Layout */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - Filters */}
+          <SearchFilters
+            selectedTimeSlots={selectedTimeSlots}
+            setSelectedTimeSlots={setSelectedTimeSlots}
+            priceRange={priceRange}
+            onPriceRangeChange={handlePriceRangeChange}
+            onFiltersReset={handleFiltersReset}
+            onFilterChange={handleFilterChange}
+            isUserInteracted={isUserInteracted}
+            actualMaxPrice={actualMaxPrice}
+            defaultMinPrice={defaultMinPrice}
+            defaultMaxPrice={defaultMaxPrice}
+          />
+
+          {/* Right Content - Results */}
+          <div className="flex-1">
+            {isLoading ? (
+              <LoadingSpinner />
+            ) : Object.keys(groupedTrips).length > 0 ? (
+              <div className="space-y-6">
+                {Object.entries(groupedTrips).map(([routeKey, routeTrips]) => {
+                  const route = routeTrips[0].route;
+                  return (
+                    <motion.div
+                      key={routeKey}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white rounded-lg shadow-md overflow-hidden"
+                    >
+                      {/* Route Header */}
+                      <RouteHeader
+                        route={route}
+                        routeTrips={routeTrips}
+                        formatPrice={formatPrice}
+                        formatDuration={formatDuration}
+                        getStationName={getStationName}
+                        getStationAddress={getStationAddress}
+                      />
+
+                      {/* Trip List */}
+                      <div className="divide-y divide-gray-100">
+                        {routeTrips.map((trip, index) => (
+                          <TripCard
+                            key={trip._id}
+                            trip={trip}
+                            route={route}
+                            index={index}
+                            searchParams={searchParams}
+                            formatPrice={formatPrice}
+                            formatDuration={formatDuration}
+                            getStationName={getStationName}
+                            onBooking={handleBooking}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <NoResults hasTrips={trips.length > 0} />
+            )}
           </div>
-          {searchParams && (
-            <div className="mt-2 flex items-center gap-4 text-gray-600">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{searchParams.from} - {searchParams.to}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                <span>{new Date(searchParams.date).toLocaleDateString('vi-VN')}</span>
-              </div>
-            </div>
-          )}
         </div>
-
-        {trips.length > 0 ? (
-          <div className="space-y-4">
-            {trips.map((trip) => (
-              <motion.div
-                key={trip._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        {getStationName(trip.route?.originStation)} - {getStationName(trip.route?.destinationStation)}
-                      </h3>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                        {formatDuration(trip.route?.estimatedDuration || 0)}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 text-sm">Mã chuyến: {trip.tripCode || 'N/A'}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-2xl font-bold text-blue-700">{formatPrice(trip.basePrice || 0)}</p>
-                      <span className={`px-2 py-1 rounded text-sm font-medium ${(trip.availableSeats || 0) > 10
-                        ? 'bg-green-100 text-green-800'
-                        : (trip.availableSeats || 0) > 0
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                        }`}>
-                        {(trip.availableSeats || 0) > 0
-                          ? `Còn ${trip.availableSeats} chỗ`
-                          : 'Hết chỗ'
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Thời gian</p>
-                      <p className="font-medium text-gray-800">
-                        {trip.departureTime} - {trip.arrivalTime}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Điểm đón</p>
-                      <p className="font-medium text-gray-800">
-                        {getStationName(trip.route?.originStation)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {getStationAddress(trip.route?.originStation)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Điểm trả</p>
-                      <p className="font-medium text-gray-800">
-                        {getStationName(trip.route?.destinationStation)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {getStationAddress(trip.route?.destinationStation)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Bus className="h-5 w-5 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Thông tin xe</p>
-                      <p className="font-medium text-gray-800">{trip.bus?.busType || 'N/A'}</p>
-                      <p className="text-sm text-gray-500">Biển số: {trip.bus?.licensePlate || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${(trip.availableSeats || 0) > 0
-                      ? 'bg-blue-700 text-white hover:bg-blue-800'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      }`}
-                    onClick={() => handleBooking(trip)}
-                  >
-                    Đặt vé 
-                    
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-gray-200 rounded-lg p-8 text-center"
-          >
-            <div className="mb-4">
-              <span className="inline-block p-3 bg-gray-100 rounded-full">
-                <Search className="h-6 w-6 text-gray-400" />
-              </span>
-            </div>
-            <p className="text-gray-700 text-lg font-medium">
-              Không tìm thấy chuyến xe nào phù hợp
-            </p>
-            <p className="text-gray-600 mt-2">
-              Vui lòng thử lại với các tiêu chí tìm kiếm khác
-            </p>
-          </motion.div>
-        )}
       </div>
     </div>
   );
 };
 
-export default SearchResultsPage; 
+export default SearchResultsPage;

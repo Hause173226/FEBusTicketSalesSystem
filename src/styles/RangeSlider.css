@@ -1,0 +1,109 @@
+.range-slider {
+  position: relative;
+}
+
+.range-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.range-slider input[type="range"]::-webkit-slider-track {
+  background: transparent;
+  height: 4px;
+}
+
+.range-slider input[type="range"]::-moz-range-track {
+  background: transparent;
+  height: 4px;
+  border: none;
+}
+
+.range-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #3b82f6;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+}
+
+.range-slider input[type="range"]::-moz-range-thumb {
+  background: #3b82f6;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+}
+
+.range-slider input[type="range"]:focus {
+  outline: none;
+}
+
+.range-slider input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.range-slider input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Min slider - màu xanh nhạt */
+.range-slider input[type="range"].range-min {
+  z-index: 1;
+}
+
+.range-slider input[type="range"].range-min::-webkit-slider-thumb {
+  background: #60a5fa;
+}
+
+.range-slider input[type="range"].range-min::-moz-range-thumb {
+  background: #60a5fa;
+}
+
+/* Max slider - màu xanh đậm */
+.range-slider input[type="range"].range-max {
+  z-index: 2;
+}
+
+.range-slider input[type="range"].range-max::-webkit-slider-thumb {
+  background: #1d4ed8;
+}
+
+.range-slider input[type="range"].range-max::-moz-range-thumb {
+  background: #1d4ed8;
+}
+
+/* Khi hover, tăng z-index để thumb nổi lên */
+.range-slider input[type="range"]:hover {
+  z-index: 3;
+}
+
+/* Active track styles */
+.range-active-track {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 9999px;
+  left: var(--track-left, 0%);
+  width: var(--track-width, 100%);
+}
