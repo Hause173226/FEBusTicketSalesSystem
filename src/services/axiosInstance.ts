@@ -1,4 +1,5 @@
 import axios from "axios";
+import { handleTokenExpiration } from "../utils/authUtils";
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_REACT_APP_BASE_URL,
@@ -46,6 +47,12 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status !== 401 || 
         originalRequest._retry || 
         originalRequest.url?.includes('refresh-token')) {
+      
+      // If it's a 401 on refresh token endpoint, handle token expiration
+      if (error.response?.status === 401 && originalRequest.url?.includes('refresh-token')) {
+        handleTokenExpiration();
+      }
+      
       return Promise.reject(error);
     }
 
@@ -70,6 +77,8 @@ axiosInstance.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       
       if (!refreshToken) {
+        // No refresh token available, handle token expiration
+        handleTokenExpiration();
         throw new Error('No refresh token available');
       }
 
@@ -100,11 +109,14 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(originalRequest);
       
     } catch (refreshError) {
-      // Only reset flags and process queue with error, but DON'T clear tokens
+      // Reset flags and process queue with error
       processQueue(refreshError, null);
       isRefreshing = false;
       
-      // Just reject the promise without clearing tokens
+      // Handle token expiration
+      handleTokenExpiration();
+      
+      // Reject the promise
       return Promise.reject(refreshError);
     }
   }
