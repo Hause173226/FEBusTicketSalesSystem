@@ -40,4 +40,7 @@ export const updateBookingPaymentStatus = async (bookingId: string, paymentStatu
   });
   return response.data.data;
 };
-
+export const getBookingHistoryByCustomer = async (customerId: string) => {
+  const response = await axiosInstance.get<{ data: Booking[] }>(`/booking/history/${customerId}`);
+  return response.data.data;
+};

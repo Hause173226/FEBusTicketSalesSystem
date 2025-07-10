@@ -6,6 +6,7 @@ import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
 import { signoutService } from '../services/signoutService';
 import { userServices } from '../services/userServices';
+import { getBookingHistoryByCustomer } from '../services/bookingServices';
 import { Profile, Booking } from '../types';
 import { toast } from 'react-hot-toast';
 
@@ -13,6 +14,8 @@ const ProfilePage: React.FC = () => {
   const { profile, isLoggedIn, logout, setProfile } = useAppContext();
   const [activeTab, setActiveTab] = useState<'profile' | 'tickets'>('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [userBookings, setUserBookings] = useState<Booking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   const [formData, setFormData] = useState<Profile>({
     _id: '',
     fullName: '',
@@ -49,6 +52,30 @@ const ProfilePage: React.FC = () => {
       });
     }
   }, [profile]);
+
+  // Function to fetch user bookings
+  const fetchUserBookings = async () => {
+    if (!isLoggedIn || !profile?._id) return;
+    
+    setIsLoadingBookings(true);
+    try {
+      // Use the specific customer booking history API
+      const bookings = await getBookingHistoryByCustomer(profile._id);
+      setUserBookings(bookings);
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      toast.error('Không thể tải danh sách vé đã đặt');
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  };
+
+  // Fetch bookings when component mounts or when switching to tickets tab
+  useEffect(() => {
+    if (activeTab === 'tickets' && isLoggedIn) {
+      fetchUserBookings();
+    }
+  }, [activeTab, isLoggedIn]);
   
   if (!profile) {
     return (
@@ -308,10 +335,23 @@ const ProfilePage: React.FC = () => {
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-6">Vé đã đặt</h2>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800">Vé đã đặt</h2>
+                    <button 
+                      onClick={fetchUserBookings}
+                      className="text-blue-700 hover:underline text-sm"
+                      disabled={isLoadingBookings}
+                    >
+                      {isLoadingBookings ? 'Đang tải...' : 'Làm mới'}
+                    </button>
+                  </div>
                   <div className="space-y-4">
-                    {profile.bookings && profile.bookings.length > 0 ? (
-                      profile.bookings.map((booking) => (
+                    {isLoadingBookings ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">Đang tải danh sách vé...</p>
+                      </div>
+                    ) : userBookings && userBookings.length > 0 ? (
+                      userBookings.map((booking) => (
                         <TicketCard key={booking._id} booking={booking} />
                       ))
                     ) : (
