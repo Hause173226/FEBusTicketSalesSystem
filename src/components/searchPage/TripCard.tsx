@@ -24,11 +24,18 @@ const TripCard: React.FC<TripCardProps> = ({
   getStationName,
   onBooking
 }) => {
+  // Thêm log để debug
+  console.log('Trip available seats:', trip.availableSeats);
+  
+  // Cải thiện logic kiểm tra
+  const availableSeats = trip.availableSeats ?? 0;
+  const isAvailable = availableSeats > 0;
+  
   return (
     <motion.div
       className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
       whileHover={{ backgroundColor: "#f9fafb" }}
-      onClick={() => onBooking(trip)}
+      onClick={() => isAvailable && onBooking(trip)}
     >
       <div className="flex items-center justify-between">
         {/* Trip Info Left */}
@@ -77,14 +84,14 @@ const TripCard: React.FC<TripCardProps> = ({
               {formatPrice(trip.basePrice)}
             </div>
             <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-              (trip.availableSeats || 0) > 10
+              availableSeats > 10
                 ? 'bg-green-100 text-green-800'
-                : (trip.availableSeats || 0) > 0
+                : availableSeats > 0
                   ? 'bg-yellow-100 text-yellow-800'
                   : 'bg-red-100 text-red-800'
             }`}>
-              {(trip.availableSeats || 0) > 0
-                ? `Còn ${trip.availableSeats} chỗ`
+              {isAvailable
+                ? `Còn ${availableSeats} chỗ`
                 : 'Hết chỗ'
               }
             </div>
@@ -92,13 +99,13 @@ const TripCard: React.FC<TripCardProps> = ({
           
           <button
             className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              (trip.availableSeats || 0) > 0
+              isAvailable
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
-            disabled={(trip.availableSeats || 0) === 0}
+            disabled={!isAvailable}
           >
-            {(trip.availableSeats || 0) > 0 ? 'Chọn chuyến' : 'Hết chỗ'}
+            {isAvailable ? 'Chọn chuyến' : 'Hết chỗ'}
           </button>
         </div>
       </div>
