@@ -16,10 +16,13 @@ import { Route, Trip, Station } from '../types';
 import { getRouteById } from '../services/routeServices';
 import { getTripsByRoute } from '../services/tripServices';
 import { getStationById } from '../services/stationServices';
+import { useAppContext } from '../context/AppContext';
 
 const RouteDetailPage: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
   const navigate = useNavigate();
+  const { profile } = useAppContext();
+  
   const [route, setRoute] = useState<Route | null>(null);
   const [originStation, setOriginStation] = useState<Station | null>(null);
   const [destinationStation, setDestinationStation] = useState<Station | null>(null);
@@ -104,6 +107,16 @@ const RouteDetailPage: React.FC = () => {
         {config.label}
       </span>
     );
+  };
+
+  const handleBookTrip = (trip: Trip) => {
+    if (!profile) {
+      navigate('/login');
+      return;
+    }
+    
+    // Navigate directly to booking page with tripId as route parameter
+    navigate(`/booking/${trip._id}`);
   };
 
   if (isLoading) {
@@ -327,9 +340,10 @@ const RouteDetailPage: React.FC = () => {
                         </span>
                       )}
                       
-                      {trip.status === 'active' && trip.availableSeats > 0 && (
+                      {/* Booking button */}
+                      {trip.status !== 'cancelled' && trip.status !== 'completed' && (
                         <button
-                          onClick={() => navigate(`/booking?tripId=${trip._id}`)}
+                          onClick={() => handleBookTrip(trip)}
                           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         >
                           Đặt vé

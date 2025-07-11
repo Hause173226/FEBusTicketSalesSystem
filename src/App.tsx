@@ -50,6 +50,7 @@ function App() {
             <Route path="reset-password" element={<ResetPasswordPage />} />
             <Route path="search-results" element={<SearchResultsPage />} />
             <Route path="booking" element={<BookingsPage />} />
+            <Route path="booking/:id" element={<BookingsPage />} />
             <Route path="booking-confirmation/:bookingId" element={<BookingConfirmationPage />} />
             <Route path="booking-details/:orderId" element={<BookingDetailPage />} />
             <Route path="payment-details/:orderId" element={<PaymentDetailsPage />} />
