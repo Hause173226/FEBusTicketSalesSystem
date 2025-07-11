@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Bus, Calendar, Clock, MapPin } from 'lucide-react';
 import { Trip, Seat } from '../types';
 import { getTripById } from '../services/tripServices';
 import { useAppContext } from '../context/AppContext';
-import SeatSelection from '../components/SeatSelection';
+import SeatSelection, { SeatSelectionRef } from '../components/SeatSelection';
 import { createBooking } from '../services/bookingServices';
 
 const TEMP_BOOKING_KEY = 'temp_booking_data';
@@ -17,11 +17,10 @@ const BookingPage: React.FC = () => {
   const [isTripLoading, setIsTripLoading] = useState(!selectedTrip);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [seatsConfirmed, setSeatsConfirmed] = useState(false);
-  const [confirmedSeats, setConfirmedSeats] = useState<Seat[]>([]);
+  const [currentSelectedSeats, setCurrentSelectedSeats] = useState<Seat[]>([]);
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
-  const [selectedSeatsLocked, setSelectedSeatsLocked] = useState(false);
   const navigate = useNavigate();
+  const seatSelectionRef = useRef<SeatSelectionRef>(null);
 
 
   useEffect(() => {
@@ -30,8 +29,7 @@ const BookingPage: React.FC = () => {
     if (tempBooking) {
       const bookingData = JSON.parse(tempBooking);
       if (bookingData.tripId === id) {
-        setConfirmedSeats(bookingData.seats);
-        // Don't set seatsConfirmed here
+        setCurrentSelectedSeats(bookingData.seats);
         setShowPaymentConfirmation(true);
       } else {
         // Clear if it's for a different trip
@@ -92,26 +90,29 @@ const BookingPage: React.FC = () => {
       setIsBooking(true);
       setError(null);
       
-      if (!trip || !profile) {
-        throw new Error('Missing trip or user information');
+      if (!profile) {
+        throw new Error('Vui lòng đăng nhập để đặt vé');
       }
 
-      if (confirmedSeats.length === 0) {
+      if (!trip) {
+        throw new Error('Không tìm thấy thông tin chuyến xe');
+      }
+
+      // Get selected seats from ref
+      const selectedSeats = seatSelectionRef.current?.getSelectedSeats() || [];
+      
+      if (selectedSeats.length === 0) {
         throw new Error('Vui lòng chọn ghế trước khi đặt vé');
       }
 
-      if (!seatsConfirmed) {
-        throw new Error('Vui lòng xác nhận chọn ghế trước khi đặt vé');
-      }
-
-      // Create booking using the already confirmed seats
+      // Create booking first
       const bookingData = {
         trip: trip._id,
         customer: profile._id,
         pickupStation: trip.route.originStation._id,
         dropoffStation: trip.route.destinationStation._id,
-        seatNumbers: confirmedSeats.map(seat => seat.number),
-        totalAmount: trip.basePrice * confirmedSeats.length
+        seatNumbers: selectedSeats.map((seat: Seat) => seat.number),
+        totalAmount: trip.basePrice * selectedSeats.length
       };
 
       const booking = await createBooking(bookingData);
@@ -122,13 +123,36 @@ const BookingPage: React.FC = () => {
       };
 
       localStorage.setItem(TEMP_BOOKING_KEY, JSON.stringify(tempBookingData));
+      setCurrentSelectedSeats(selectedSeats);
       setShowPaymentConfirmation(true);
-      setSelectedSeatsLocked(true); // Lock seats after confirmation
       
     } catch (err: any) {
       console.error('Booking error:', err);
-      setError(err.message || 'Không thể tạo đặt vé. Vui lòng thử lại sau.');
+      
+      // Handle specific error messages
+      let errorMessage = 'Không thể tạo đặt vé. Vui lòng thử lại sau.';
+      
+      if (err.response?.data?.message) {
+        const serverMessage = err.response.data.message;
+        if (serverMessage.includes('Seats not available')) {
+          const unavailableSeats = serverMessage.split(':').pop()?.trim();
+          errorMessage = `Ghế ${unavailableSeats} đã được đặt bởi người khác. Vui lòng chọn ghế khác.`;
+        } else if (serverMessage.includes('seat')) {
+          errorMessage = 'Một số ghế đã được người khác chọn. Vui lòng chọn ghế khác.';
+        } else {
+          errorMessage = serverMessage;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setShowPaymentConfirmation(false);
+      
+      // Refresh seat availability
+      if (seatSelectionRef.current) {
+        await seatSelectionRef.current.refreshSeats();
+      }
     } finally {
       setIsBooking(false);
     }
@@ -241,24 +265,14 @@ const BookingPage: React.FC = () => {
               <p className="text-sm text-gray-600 mb-4">Chọn tối đa 5 ghế</p>
 
               <SeatSelection 
+                ref={seatSelectionRef}
                 tripId={trip._id}
                 basePrice={trip.basePrice}
-                onConfirmSeats={(seats) => {
-                  setConfirmedSeats(seats);
-                  setSeatsConfirmed(true);
-                  setSelectedSeatsLocked(false);
-                  setShowPaymentConfirmation(false);
+                onSeatsChange={(seats) => {
+                  setCurrentSelectedSeats(seats);
                 }}
-                disabled={selectedSeatsLocked}
+                disabled={false}
               />
-
-              {seatsConfirmed && (
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-700 font-medium">
-                    Đã xác nhận {confirmedSeats.length} ghế thành công!
-                  </p>
-                </div>
-              )}
             </div>
           </div>
 
@@ -277,6 +291,7 @@ const BookingPage: React.FC = () => {
                     type="text"
                     value={profile?.fullName || ''}
                     readOnly
+                    placeholder="Họ và tên"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 </div>
@@ -288,6 +303,7 @@ const BookingPage: React.FC = () => {
                     type="text"
                     value={profile?.phone || ''}
                     readOnly
+                    placeholder="Số điện thoại"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 </div>
@@ -299,6 +315,7 @@ const BookingPage: React.FC = () => {
                     type="email"
                     value={profile?.email || ''}
                     readOnly
+                    placeholder="Email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 </div>
@@ -337,13 +354,13 @@ const BookingPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Số lượng ghế:</span>
-                  <span className="font-medium text-gray-800">{confirmedSeats.length}</span>
+                  <span className="font-medium text-gray-800">{currentSelectedSeats.length}</span>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between items-center text-lg">
                     <span className="font-medium text-gray-800">Tổng tiền:</span>
                     <span className="font-bold text-blue-600">
-                      {(trip.basePrice * confirmedSeats.length).toLocaleString('vi-VN')} đ
+                      {(trip.basePrice * currentSelectedSeats.length).toLocaleString('vi-VN')} đ
                     </span>
                   </div>
                 </div>
@@ -354,12 +371,12 @@ const BookingPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Ghế đã chọn</h3>
               <div className="flex flex-wrap gap-2">
-                {confirmedSeats.map(seat => (
+                {currentSelectedSeats.map((seat: Seat) => (
                   <span key={seat.id} className="px-3 py-1 bg-green-100 text-green-800 rounded">
                     {seat.number}
                   </span>
                 ))}
-                {confirmedSeats.length === 0 && (
+                {currentSelectedSeats.length === 0 && (
                   <span className="text-gray-500">Chưa chọn ghế</span>
                 )}
               </div>
@@ -369,7 +386,7 @@ const BookingPage: React.FC = () => {
             {!showPaymentConfirmation ? (
               <button
                 onClick={handleBookingConfirmation}
-                disabled={confirmedSeats.length === 0 || isBooking}
+                disabled={currentSelectedSeats.length === 0 || isBooking}
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {isBooking ? 'Đang xử lý...' : 'Đặt vé'}
@@ -389,8 +406,7 @@ const BookingPage: React.FC = () => {
                 onClick={() => {
                   localStorage.removeItem(TEMP_BOOKING_KEY);
                   setShowPaymentConfirmation(false);
-                  setSeatsConfirmed(false);
-                  setConfirmedSeats([]);
+                  setCurrentSelectedSeats([]);
                 }}
                 className="w-full mt-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
