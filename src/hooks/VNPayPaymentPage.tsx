@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import paymentsServices from '../services/paymentsServices';   
-import { VNPayPaymentRequest } from '../types';
-
 const VNPayPaymentPage: React.FC = () => {
   const navigate = useNavigate();
   const { bookingId } = useParams<{ bookingId: string }>();

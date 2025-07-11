@@ -2,11 +2,11 @@ import React from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Ticket, Calendar, MapPin, Clock } from 'lucide-react';
-import { Route, Seat } from '../types';
+import { Route, Seat, Trip } from '../types';
 import { useAppContext } from '../context/AppContext';
 
 interface BookingSummaryProps {
-  route: Route;
+  route?: Route | Trip;
   selectedSeats: Seat[];
 }
 
@@ -25,6 +25,37 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
     return format(date, 'EEEE, dd/MM/yyyy', { locale: vi });
   };
 
+  // Helper function to check if route is a Trip
+  const isTrip = (routeData: Route | Trip | undefined): routeData is Trip => {
+    return routeData !== undefined && 'departureDate' in routeData;
+  };
+
+  // Helper function to get station name safely
+  const getStationName = (station: any): string => {
+    if (typeof station === 'string') return station;
+    if (station && typeof station === 'object' && station.name) return station.name;
+    return 'Không xác định';
+  };
+
+  // Helper function to get station code safely
+  const getStationCode = (station: any): string => {
+    if (station && typeof station === 'object' && station.code) return station.code;
+    return '';
+  };
+
+  if (!route) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <p className="text-gray-500">Đang tải thông tin...</p>
+      </div>
+    );
+  }
+
+  const trip = isTrip(route) ? route : null;
+  const routeInfo = isTrip(route) ? route.route : route;
+  
+  // Calculate total price based on available data
+  const basePrice = trip?.basePrice || selectedSeats.reduce((sum, seat) => sum + seat.price, 0) / selectedSeats.length || 0;
   const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
   return (
@@ -47,9 +78,13 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
           <MapPin className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm text-gray-500">Từ</p>
-            <p className="font-medium text-gray-800">{route.originStation[0].name}</p>
+            <p className="font-medium text-gray-800">
+              {getStationName(routeInfo.originStation)}
+            </p>
             <p className="text-sm text-gray-500 mt-2">Đến</p>
-            <p className="font-medium text-gray-800">{route.destinationStation[0].name}</p>
+            <p className="font-medium text-gray-800">
+              {getStationName(routeInfo.destinationStation)}
+            </p>
           </div>
         </div>
         
@@ -57,14 +92,20 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
           <Clock className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
           <div>
             <p className="text-sm text-gray-500">Giờ khởi hành</p>
-            <p className="font-medium text-gray-800">{route.departureDate}</p>
+            <p className="font-medium text-gray-800">
+              {trip ? trip.departureDate : 'Chưa xác định'}
+            </p>
           </div>
         </div>
         
         <div className="pt-2">
           <p className="text-sm text-gray-500 mb-1">Nhà xe</p>
-          <p className="font-medium text-gray-800">{route.originStation[0].name}</p>
-          <p className="text-sm text-gray-500">{route.originStation[0].code}</p>
+          <p className="font-medium text-gray-800">
+            {getStationName(routeInfo.originStation)}
+          </p>
+          <p className="text-sm text-gray-500">
+            {getStationCode(routeInfo.originStation)}
+          </p>
         </div>
         
         <div className="pt-2">
@@ -85,7 +126,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({ route, selectedSeats })
         <div className="border-t border-gray-200 pt-4 mt-4">
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Giá vé ({selectedSeats.length} ghế)</span>
-            <span>{formatPrice(route.basePrice * selectedSeats.length)}</span>
+            <span>{formatPrice(basePrice * selectedSeats.length)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span className="text-gray-600">Phí dịch vụ</span>
