@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import paymentsServices from '../services/paymentsServices'; 
+import LoadingSpinner from '../components/LoadingSpinner'; 
 
 const VNPayReturnPage: React.FC = () => {
   const location = useLocation();
@@ -30,23 +31,51 @@ const VNPayReturnPage: React.FC = () => {
             state: { paymentMethod: 'VNPay' }
           });
         } else {
-          toast.error(response.message || 'Thanh toán thất bại. Vui lòng thử lại.');
-          navigate('/payment/failed', { 
+          // Xác định thông báo lỗi dựa trên mã response
+          let errorMessage = 'Thanh toán thất bại. Vui lòng thử lại.';
+          
+          switch (vnp_ResponseCode) {
+            case '24':
+              errorMessage = 'Giao dịch bị hủy bởi người dùng';
+              break;
+            case '51':
+              errorMessage = 'Số dư tài khoản không đủ để thực hiện giao dịch';
+              break;
+            case '06': 
+              errorMessage = 'Có lỗi xảy ra trong quá trình xử lý. Thông tin thẻ không hợp lệ';
+              break;
+            case '15':
+              errorMessage = 'Ngày hết hạn thẻ không chính xác';
+              break;
+            case '13':
+              errorMessage = 'Mật khẩu xác thực giao dịch không chính xác';
+              break;
+            case '75':
+              errorMessage = 'Ngân hàng thanh toán đang bảo trì';
+              break;
+            default:
+              errorMessage = response.message || 'Thanh toán thất bại. Vui lòng thử lại.';
+          }
+          
+          toast.error(errorMessage);
+          navigate(`/payment/failed?code=${vnp_ResponseCode}&orderId=${storedBookingId}&message=${encodeURIComponent(errorMessage)}`, { 
             replace: true,
             state: { 
               orderId: storedBookingId,
               errorCode: vnp_ResponseCode,
-              errorMessage: response.message || 'Thanh toán thất bại'
+              errorMessage: errorMessage
             } 
           });
         }
       } catch (error: any) {
         console.error('Payment verification error:', error);
-        toast.error(error.message || 'Có lỗi xảy ra khi xác thực thanh toán');
-        navigate('/payment/failed', {
+        const errorMessage = error.message || 'Có lỗi xảy ra khi xác thực thanh toán';
+        toast.error(errorMessage);
+        navigate(`/payment/failed?message=${encodeURIComponent(errorMessage)}`, {
           replace: true,
           state: {
-            errorMessage: error.message || 'Có lỗi xảy ra khi xác thực thanh toán'
+            errorMessage: errorMessage,
+            orderId: storedBookingId
           }
         });
       } finally {
@@ -59,13 +88,11 @@ const VNPayReturnPage: React.FC = () => {
   }, [location, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Đang xử lý kết quả thanh toán...</p>
-        <p className="mt-2 text-sm text-gray-500">Vui lòng không tắt trình duyệt</p>
-      </div>
-    </div>
+    <LoadingSpinner 
+      title="Đang xử lý kết quả thanh toán..."
+      description="Hệ thống đang xác thực giao dịch của bạn"
+      size="large"
+    />
   );
 };
 

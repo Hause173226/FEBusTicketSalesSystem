@@ -7,7 +7,7 @@ import { userServices } from '../../services/userServices';
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [success] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();

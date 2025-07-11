@@ -41,6 +41,7 @@ function App() {
             <Route path="payment/vnpay-return" element={<VNPayReturnPage />} />
             <Route path="payment-success" element={<PaymentSuccessPage />} />
             <Route path="payment/failed" element={<PaymentFailedPage />} />
+            <Route path="payment-failed" element={<PaymentFailedPage />} />
             <Route path="ticket/:bookingId" element={<TicketPage />} />
             <Route path="contact" element={<ContactPage />} />
             <Route path="login" element={<LoginPage />} />
