@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { ArrowLeft, Download, Printer, Bus, Calendar,  MapPin, Users } from 'lucide-react';
-import { routes } from '../data';
 import { useAppContext } from '../context/AppContext';
 import { Booking } from '../types';
 import { formatDate, formatPrice } from '../utils/dateUtils';
@@ -20,8 +19,8 @@ const TicketPage: React.FC = () => {
     ? currentBooking
     : profile?.bookings.find((b: Booking) => b._id === bookingId);
   
-  // Find route information from the data routes (mock data)
-  const route = booking?.trip ? routes.find((r: any) => r.id === '1') : null; // Using mock data structure
+  // Use route information from booking data
+  const route = booking?.trip?.route;
   
   if (!booking || !route) {
     return (

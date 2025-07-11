@@ -6,7 +6,7 @@ import SearchFilters from '../components/searchPage/SearchFilters';
 import SearchResultsHeader from '../components/searchPage/SearchResultsHeader';
 import RouteHeader from '../components/searchPage/RouteHeader';
 import TripCard from '../components/searchPage/TripCard';
-import LoadingSpinner from '../components/searchPage/LoadingSpinner';
+import LoadingSpinner from '../components/LoadingSpinner';
 import NoResults from '../components/searchPage/NoResults';
 import { Trip } from '../types';
 import { useAppContext } from '../context/AppContext';
