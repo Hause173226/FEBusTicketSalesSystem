@@ -52,4 +52,27 @@ export const userServices = {
       refreshToken: refreshToken
     });
   },
+  uploadProfileImage: (imageFile: File) => {
+    const formData = new FormData();
+    formData.append('image', imageFile); // Try 'image' first
+    
+    return axiosInstance.post("/upload/profile", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  
+  // Alternative upload method with different field name
+  uploadProfileImageAlt: (imageFile: File) => {
+    const formData = new FormData();
+    formData.append('file', imageFile); // Try 'file' as field name
+    
+    return axiosInstance.post("/upload/profile", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  
 };

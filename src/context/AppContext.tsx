@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Booking, Route, SearchParams, Seat, Profile, Trip } from '../types';
+import { saveProfileImage, getProfileImage, migrateLegacyProfileImage } from '../utils/profileImageUtils';
 
 
 interface AppContextProps {
@@ -38,7 +39,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useState<Profile | null>(() => {
     // Initialize profile from localStorage if available
     const profileData = localStorage.getItem('profile');
-    return profileData ? JSON.parse(profileData) : null;
+    if (profileData) {
+      const parsedProfile = JSON.parse(profileData);
+      
+      // Try to restore profile image using the new utility
+      if (parsedProfile._id) {
+        // First, try to migrate legacy image
+        const legacyImage = migrateLegacyProfileImage(parsedProfile._id);
+        if (legacyImage && !parsedProfile.profileImage) {
+          parsedProfile.profileImage = legacyImage;
+          localStorage.setItem('profile', JSON.stringify(parsedProfile));
+        }
+        
+        // Then check for saved image for this user
+        const savedImage = getProfileImage(parsedProfile._id);
+        if (savedImage && !parsedProfile.profileImage) {
+          parsedProfile.profileImage = savedImage;
+          localStorage.setItem('profile', JSON.stringify(parsedProfile));
+        }
+      }
+      
+      return parsedProfile;
+    }
+    return null;
   });
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -128,8 +151,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Store user data
       if (signinRes.data.user) {
-        setProfile(signinRes.data.user as Profile);
-        localStorage.setItem('profile', JSON.stringify(signinRes.data.user));
+        const userData = signinRes.data.user as Profile;
+        
+        // Check if there's a saved profile image for this user
+        if (userData._id) {
+          const savedProfileImage = getProfileImage(userData._id);
+          if (savedProfileImage && !userData.profileImage) {
+            userData.profileImage = savedProfileImage;
+          }
+        }
+        
+        setProfile(userData);
+        localStorage.setItem('profile', JSON.stringify(userData));
         return;
       }
 
@@ -139,8 +172,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         if (userRes.status !== 200 || !userRes.data) {
           throw new Error('Không thể lấy thông tin người dùng');
         }
-        setProfile(userRes.data as Profile);
-        localStorage.setItem('profile', JSON.stringify(userRes.data));
+        
+        const userData = userRes.data as Profile;
+        
+        // Check if there's a saved profile image for this user
+        if (userData._id) {
+          const savedProfileImage = getProfileImage(userData._id);
+          if (savedProfileImage && !userData.profileImage) {
+            userData.profileImage = savedProfileImage;
+          }
+        }
+        
+        setProfile(userData);
+        localStorage.setItem('profile', JSON.stringify(userData));
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -158,17 +202,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const { signoutService } = await import('../services/signoutService');
       await signoutService.handleSignout();
       
+      // Save profile image before clearing profile
+      if (profile?.profileImage && profile._id) {
+        saveProfileImage(profile._id, profile.profileImage);
+      }
+      
       // Clear user state
       setProfile(null);
       
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear user state if something goes wrong
+      if (profile?.profileImage && profile._id) {
+        saveProfileImage(profile._id, profile.profileImage);
+      }
       setProfile(null);
     }
   };
 
   const logoutDueToExpiration = () => {
+    // Save profile image before clearing
+    if (profile?.profileImage && profile._id) {
+      saveProfileImage(profile._id, profile.profileImage);
+    }
+    
     // Clear user state immediately without calling signout service
     // since the tokens are already expired
     localStorage.removeItem('token');

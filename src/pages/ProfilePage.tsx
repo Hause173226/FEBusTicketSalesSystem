@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Ticket, Edit, LogOut, Save, X } from 'lucide-react'; 
+import { User, Ticket, Edit, LogOut, Save, X, Camera } from 'lucide-react'; 
 import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
 import { signoutService } from '../services/signoutService';
@@ -9,6 +9,7 @@ import { userServices } from '../services/userServices';
 import { getBookingHistoryByCustomer } from '../services/bookingServices';
 import { Profile, Booking } from '../types';
 import { toast } from 'react-hot-toast';
+import { saveProfileImage } from '../utils/profileImageUtils';
 
 const ProfilePage: React.FC = () => {
   const { profile, isLoggedIn, logout, setProfile } = useAppContext();
@@ -16,6 +17,9 @@ const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [formData, setFormData] = useState<Profile>({
     _id: '',
     fullName: '',
@@ -29,6 +33,7 @@ const ProfilePage: React.FC = () => {
     bookings: [],
   });
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (!isLoggedIn) {
@@ -96,13 +101,148 @@ const ProfilePage: React.FC = () => {
     e.preventDefault();
     try {
       const response = await userServices.updateProfile(formData);
-      setProfile({ ...profile, ...response.data });
+      const updatedProfile = { ...profile, ...response.data };
+      setProfile(updatedProfile);
+      
+      // Also update localStorage to persist the changes
+      localStorage.setItem('profile', JSON.stringify(updatedProfile));
+      
       setIsEditing(false);
       toast.success('Cập nhật thông tin thành công!');
     } catch (error) {
       toast.error('Có lỗi xảy ra khi cập nhật thông tin!');
     }
   };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn file ảnh!');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kích thước ảnh không được vượt quá 5MB!');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setIsUploadingImage(true);
+    try {
+      let response;
+      try {
+        // Try with 'image' field first
+        response = await userServices.uploadProfileImage(file);
+      } catch (firstError: any) {
+        console.log('First upload attempt failed, trying alternative method...');
+        // If first attempt fails, try with 'file' field
+        response = await userServices.uploadProfileImageAlt(file);
+      }
+      
+      console.log('Upload response:', response.data); // Debug log
+      
+      // Handle different response formats
+      let imageUrl = '';
+      if (response.data) {
+        // Try different possible response formats
+        imageUrl = response.data.imageUrl || 
+                  response.data.url || 
+                  response.data.filePath || 
+                  response.data.data?.imageUrl ||
+                  response.data.data?.url;
+      }
+      
+      if (imageUrl) {
+        const updatedProfile = { ...profile, profileImage: imageUrl };
+        setProfile(updatedProfile);
+        
+        // Also update localStorage to persist the image
+        localStorage.setItem('profile', JSON.stringify(updatedProfile));
+        
+        // Save image separately for persistence across sessions
+        if (profile?._id) {
+          saveProfileImage(profile._id, imageUrl);
+        }
+        
+        setPreviewImage(null); // Clear preview after successful upload
+        toast.success('Cập nhật ảnh đại diện thành công!');
+      } else {
+        console.error('No image URL found in response:', response.data);
+        toast.error('Không thể lấy URL ảnh từ server!');
+        setPreviewImage(null);
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setPreviewImage(null);
+      
+      // More specific error messages
+      if (error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message || error.response.data?.error;
+        
+        if (status === 500) {
+          toast.error(`Lỗi server: ${message || 'Vui lòng thử lại sau'}`);
+        } else if (status === 413) {
+          toast.error('File quá lớn, vui lòng chọn file khác!');
+        } else if (status === 415) {
+          toast.error('Định dạng file không được hỗ trợ!');
+        } else {
+          toast.error(`Lỗi: ${message || 'Có lỗi xảy ra khi tải ảnh lên'}`);
+        }
+      } else {
+        toast.error('Không thể kết nối đến server!');
+      }
+    } finally {
+      setIsUploadingImage(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageClick = () => {
+    if (profile.profileImage) {
+      setShowImageModal(true);
+    }
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+  };
+
+  // Handle ESC key press to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showImageModal) {
+        closeImageModal();
+      }
+    };
+
+    if (showImageModal) {
+      document.addEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'unset'; // Restore scrolling
+    };
+  }, [showImageModal]);
   
   const handleLogout = async () => {
     try {
@@ -130,8 +270,48 @@ const ProfilePage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6 bg-blue-700 text-white">
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-700 text-2xl font-bold mb-4">
-                    {profile.fullName.charAt(0)}
+                  <div className="relative group">
+                    <div 
+                      className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-700 text-2xl font-bold mb-4 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={handleImageClick}
+                      title={profile.profileImage ? "Click để xem ảnh phóng to" : "Chưa có ảnh đại diện"}
+                    >
+                      {previewImage ? (
+                        <img 
+                          src={previewImage} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover opacity-70"
+                        />
+                      ) : profile.profileImage ? (
+                        <img 
+                          src={profile.profileImage} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        profile.fullName?.charAt(0) || 'U'
+                      )}
+                    </div>
+                    <button
+                      onClick={triggerFileInput}
+                      disabled={isUploadingImage}
+                      className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-800 text-white rounded-full p-2 transition-colors duration-200 disabled:opacity-50"
+                      title="Thay đổi ảnh đại diện"
+                    >
+                      {isUploadingImage ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Camera className="h-4 w-4" />
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      title="Chọn ảnh đại diện"
+                    />
                   </div>
                   <h2 className="text-lg font-semibold">{profile.fullName}</h2>
                   <p className="text-blue-100">{profile.email}</p>
@@ -368,6 +548,32 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Image Modal */}
+      {showImageModal && profile.profileImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={closeImageModal}
+        >
+          <div 
+            className="relative max-w-4xl max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all z-10"
+              title="Đóng"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img 
+              src={profile.profileImage} 
+              alt="Profile Image" 
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

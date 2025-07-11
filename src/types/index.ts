@@ -81,6 +81,7 @@ export interface Profile {
   address?: string;
   role: string;
   bookings: Booking[];
+  profileImage?: string;
   createdAt?: string;
   updatedAt?: string;
 }
