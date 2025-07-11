@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import { TokenGuard } from './components/TokenGuard';
 import HomePage from './pages/HomePage';
 import RoutesPage from './pages/RoutesPage';
+import RouteDetailPage from './pages/RouteDetailPage';
 import PaymentPage from './pages/PaymentPage';
 import TicketPage from './pages/TicketPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -33,6 +34,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="routes" element={<RoutesPage />} />
+            <Route path="routes/:routeId" element={<RouteDetailPage />} />
             <Route path="bookings/:id" element={<BookingsPage />} />
             <Route path="payment/:id" element={<PaymentPage />} />
             <Route path="payment/vnpay/:bookingId" element={<VNPayPaymentPage />} />

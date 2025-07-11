@@ -18,5 +18,6 @@ export const getTripById = async (id: string): Promise<Trip> => {
 
 export const getTripsByRoute = async (routeId: string): Promise<Trip[]> => {
   const response = await axiosInstance.get(`/trips/route/${routeId}`);
-  return response.data;
+  // API trả về format: {success: boolean, count: number, data: Trip[]}
+  return response.data.data || [];
 };

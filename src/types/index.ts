@@ -2,8 +2,8 @@ export interface Route {
   _id: string;
   name: string;
   code: string;
-  originStation: Station;
-  destinationStation: Station;
+  originStation?: Station | string;
+  destinationStation?: Station | string;
   distanceKm: number;
   estimatedDuration: number;
   status: string;
