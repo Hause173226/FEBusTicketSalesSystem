@@ -6,6 +6,7 @@ import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
 import { signoutService } from '../services/signoutService';
 import { userServices } from '../services/userServices';
+import { getBookingHistoryByCustomer } from '../services/bookingServices';
 import { Profile, Booking } from '../types';
 import { toast } from 'react-hot-toast';
 
@@ -13,6 +14,8 @@ const ProfilePage: React.FC = () => {
   const { profile, isLoggedIn, logout, setProfile } = useAppContext();
   const [activeTab, setActiveTab] = useState<'profile' | 'tickets'>('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [userBookings, setUserBookings] = useState<Booking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
   const [formData, setFormData] = useState<Profile>({
     _id: '',
     fullName: '',
@@ -49,6 +52,29 @@ const ProfilePage: React.FC = () => {
       });
     }
   }, [profile]);
+
+  // Function to fetch user bookings
+  const fetchUserBookings = async () => {
+    if (!isLoggedIn || !profile?._id) return;
+    
+    setIsLoadingBookings(true);
+    try {
+      // Use the specific customer booking history API
+      const bookings = await getBookingHistoryByCustomer(profile._id);
+      setUserBookings(bookings);
+    } catch (error) {
+      toast.error('Không thể tải danh sách vé đã đặt');
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  };
+
+  // Fetch bookings when component mounts or when switching to tickets tab
+  useEffect(() => {
+    if (activeTab === 'tickets' && isLoggedIn) {
+      fetchUserBookings();
+    }
+  }, [activeTab, isLoggedIn]);
   
   if (!profile) {
     return (
@@ -74,7 +100,6 @@ const ProfilePage: React.FC = () => {
       setIsEditing(false);
       toast.success('Cập nhật thông tin thành công!');
     } catch (error) {
-      console.error('Error updating profile:', error);
       toast.error('Có lỗi xảy ra khi cập nhật thông tin!');
     }
   };
@@ -86,10 +111,9 @@ const ProfilePage: React.FC = () => {
       navigate('/');
       
       if (!result.success) {
-        console.error(result);
+        // Signout failed but we'll still logout locally
       }
     } catch (error) {
-      console.error('Error signing out:', error);
       logout();
       navigate('/');
     }
@@ -231,62 +255,74 @@ const ProfilePage: React.FC = () => {
                   ) : (
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Họ và tên</label>
+                        <label htmlFor="fullName" className="block text-sm text-gray-500 mb-1">Họ và tên</label>
                         <input
+                          id="fullName"
                           type="text"
                           name="fullName"
                           value={formData.fullName}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          placeholder="Nhập họ và tên"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Số điện thoại</label>
+                        <label htmlFor="phone" className="block text-sm text-gray-500 mb-1">Số điện thoại</label>
                         <input
+                          id="phone"
                           type="tel"
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          placeholder="Nhập số điện thoại"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Email</label>
+                        <label htmlFor="email" className="block text-sm text-gray-500 mb-1">Email</label>
                         <input
+                          id="email"
                           type="email"
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          placeholder="Nhập địa chỉ email"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">CCCD/CMND</label>
+                        <label htmlFor="citizenId" className="block text-sm text-gray-500 mb-1">CCCD/CMND</label>
                         <input
+                          id="citizenId"
                           type="text"
                           name="citizenId"
                           value={formData.citizenId}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          placeholder="Nhập số CCCD/CMND"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Ngày sinh</label>
+                        <label htmlFor="dateOfBirth" className="block text-sm text-gray-500 mb-1">Ngày sinh</label>
                         <input
+                          id="dateOfBirth"
                           type="date"
                           name="dateOfBirth"
                           value={formData.dateOfBirth}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          title="Chọn ngày sinh"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-gray-500 mb-1">Giới tính</label>
+                        <label htmlFor="gender" className="block text-sm text-gray-500 mb-1">Giới tính</label>
                         <select
+                          id="gender"
                           name="gender"
                           value={formData.gender}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          title="Chọn giới tính"
                         >
                           <option value="">Chọn giới tính</option>
                           <option value="male">Nam</option>
@@ -294,13 +330,15 @@ const ProfilePage: React.FC = () => {
                         </select>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm text-gray-500 mb-1">Địa chỉ</label>
+                        <label htmlFor="address" className="block text-sm text-gray-500 mb-1">Địa chỉ</label>
                         <input
+                          id="address"
                           type="text"
                           name="address"
                           value={formData.address}
                           onChange={handleInputChange}
                           className="w-full p-2 border rounded-md"
+                          placeholder="Nhập địa chỉ"
                         />
                       </div>
                     </form>
@@ -308,10 +346,16 @@ const ProfilePage: React.FC = () => {
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-6">Vé đã đặt</h2>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800">Vé đã đặt</h2>
+                  </div>
                   <div className="space-y-4">
-                    {profile.bookings && profile.bookings.length > 0 ? (
-                      profile.bookings.map((booking) => (
+                    {isLoadingBookings ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">Đang tải danh sách vé...</p>
+                      </div>
+                    ) : userBookings && userBookings.length > 0 ? (
+                      userBookings.map((booking) => (
                         <TicketCard key={booking._id} booking={booking} />
                       ))
                     ) : (

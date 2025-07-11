@@ -24,11 +24,24 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) =>
 
     try {
       const totalAmount = selectedSeats.reduce((total, seat) => total + seat.price, 0);
+      
+      // Type guards to ensure stations exist and are Station objects
+      const originStation = selectedTrip.route.originStation;
+      const destinationStation = selectedTrip.route.destinationStation;
+      
+      if (!originStation || !destinationStation) {
+        throw new Error('Thông tin tuyến đường không đầy đủ');
+      }
+      
+      // Handle both string and Station object cases
+      const pickupStationId = typeof originStation === 'string' ? originStation : originStation._id;
+      const dropoffStationId = typeof destinationStation === 'string' ? destinationStation : destinationStation._id;
+      
       const bookingData = {
         trip: selectedTrip._id,
         customer: profile._id,
-        pickupStation: selectedTrip.route.originStation._id,
-        dropoffStation: selectedTrip.route.destinationStation._id,
+        pickupStation: pickupStationId,
+        dropoffStation: dropoffStationId,
         seatNumbers: selectedSeats.map(seat => seat.number),
         totalAmount: totalAmount
       };
@@ -41,7 +54,8 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) =>
         bookingId: booking._id
       });
 
-      navigate(`/payment/vnpay/${booking._id}`);
+      // Navigate to booking confirmation page instead of direct payment
+      navigate(`/booking-confirmation/${booking._id}`);
       onPaymentComplete(booking._id);
     } catch (err: any) {
       console.error('Payment error:', err);

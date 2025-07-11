@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import { TokenGuard } from './components/TokenGuard';
 import HomePage from './pages/HomePage';
 import RoutesPage from './pages/RoutesPage';
+import RouteDetailPage from './pages/RouteDetailPage';
 import PaymentPage from './pages/PaymentPage';
 import TicketPage from './pages/TicketPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -20,6 +21,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
 import VNPayReturnPage from './hooks/VNPayReturnPage';
 import BookingDetailPage from './pages/BookingDetailPage';
+import BookingConfirmationPage from './pages/BookingConfirmationPage';
 import PaymentDetailsPage from './hooks/PaymentDetailsPage';
 import VNPayPaymentPage from './hooks/VNPayPaymentPage';
 
@@ -32,12 +34,14 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path="routes" element={<RoutesPage />} />
+            <Route path="routes/:routeId" element={<RouteDetailPage />} />
             <Route path="bookings/:id" element={<BookingsPage />} />
             <Route path="payment/:id" element={<PaymentPage />} />
             <Route path="payment/vnpay/:bookingId" element={<VNPayPaymentPage />} />
             <Route path="payment/vnpay-return" element={<VNPayReturnPage />} />
             <Route path="payment-success" element={<PaymentSuccessPage />} />
             <Route path="payment/failed" element={<PaymentFailedPage />} />
+            <Route path="payment-failed" element={<PaymentFailedPage />} />
             <Route path="ticket/:bookingId" element={<TicketPage />} />
             <Route path="contact" element={<ContactPage />} />
             <Route path="login" element={<LoginPage />} />
@@ -47,6 +51,8 @@ function App() {
             <Route path="reset-password" element={<ResetPasswordPage />} />
             <Route path="search-results" element={<SearchResultsPage />} />
             <Route path="booking" element={<BookingsPage />} />
+            <Route path="booking/:id" element={<BookingsPage />} />
+            <Route path="booking-confirmation/:bookingId" element={<BookingConfirmationPage />} />
             <Route path="booking-details/:orderId" element={<BookingDetailPage />} />
             <Route path="payment-details/:orderId" element={<PaymentDetailsPage />} />
 

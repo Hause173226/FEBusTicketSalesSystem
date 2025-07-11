@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import BookingSummary from '../components/BookingSummary';
 import UserForm from '../components/UserForm';

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {  Clock, ArrowRight, Route as RouteIcon } from 'lucide-react';
 import { Route } from '../types';
 import { getAllRoutes } from '../services/routeServices';
 
 const RoutesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,7 @@ const RoutesPage: React.FC = () => {
                   </span>
                   <button 
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-2"
-                    onClick={() => {/* TODO: Implement view route details */}}
+                    onClick={() => navigate(`/routes/${route._id}`)}
                   >
                     Xem chi tiết
                     <ArrowRight className="h-4 w-4" />

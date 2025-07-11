@@ -3,12 +3,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Clock, CheckCircle, Shield } from "lucide-react";
 import SearchForm from "../components/SearchForm";
-import RouteCard from "../components/RouteCard";
-import { routes } from "../data";
 
 const HomePage: React.FC = () => {
-  const popularRoutes = routes.filter((route) => route.popular);
-
   return (
     <div className="pt-16">
       {/* Hero Section */}
@@ -52,31 +48,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Popular Routes Section */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-            Tuyến phổ biến
-          </h2>
-          <p className="text-gray-600">
-            Khám phá các tuyến đường được yêu thích nhất
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {popularRoutes.map((route) => (
-            <RouteCard key={route.id} route={route} />
-          ))}
-        </div>
-
-        <div className="text-center mt-8">
-          <Link
-            to="/routes"
-            className="inline-block px-6 py-3 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors duration-200"
-          >
-            Xem tất cả tuyến
-          </Link>
-        </div>
-      </section>
+    
 
       {/* Features Section */}
       <section className="bg-gray-50 py-16">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { Seat } from '../types';
 import { useAppContext } from '../context/AppContext';
@@ -7,21 +7,59 @@ import { seatsServices } from '../services/seatsServices';
 interface SeatSelectionProps {
   tripId: string;
   basePrice: number;
-  onConfirmSeats?: (seats: Seat[]) => void;
+  onSeatsChange?: (seats: Seat[]) => void;
   disabled?: boolean;
 }
 
-const TEMP_BOOKING_KEY = 'temp_booking_data';
+export interface SeatSelectionRef {
+  getSelectedSeats: () => Seat[];
+  confirmSeats: () => Promise<void>;
+  refreshSeats: () => Promise<void>;
+}
 
-const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice, onConfirmSeats, disabled = false }) => {
+const SeatSelection = React.forwardRef<SeatSelectionRef, SeatSelectionProps>(
+  ({ tripId, basePrice, onSeatsChange, disabled = false }, ref) => {
   const { selectedSeats } = useAppContext();
   const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
   const [temporarySelectedSeats, setTemporarySelectedSeats] = useState<Seat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
   const [showConfirmationMessage, setShowConfirmationMessage] = useState(false);
   const [confirmedSeatCount, setConfirmedSeatCount] = useState(0);
+
+  useImperativeHandle(ref, () => ({
+    getSelectedSeats: () => temporarySelectedSeats,
+    confirmSeats: async () => {
+      if (temporarySelectedSeats.length > 0) {
+        await seatsServices.selectSeat({
+          tripId,
+          seatNumbers: temporarySelectedSeats.map(seat => seat.number)
+        });
+        setConfirmedSeatCount(temporarySelectedSeats.length);
+        setShowConfirmationMessage(true);
+        setTemporarySelectedSeats([]);
+      }
+    },
+    refreshSeats: async () => {
+      setIsLoading(true);
+      try {
+        const response = await seatsServices.getAvailableSeats(tripId);
+        setAvailableSeats(response.map(seat => ({
+          id: seat.seatId,
+          number: seat.seatNumber,
+          isAvailable: seat.isAvailable,
+          price: basePrice,
+          type: 'standard',
+          tripId: tripId
+        })));
+        setTemporarySelectedSeats([]); // Clear selected seats
+      } catch (err) {
+        setError('Không thể tải lại thông tin ghế.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }));
 
   useEffect(() => {
     const fetchAvailableSeats = async () => {
@@ -58,6 +96,13 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice, onConf
       setShowConfirmationMessage(false);
     }
   }, [temporarySelectedSeats]);
+
+  // Notify parent component when selected seats change
+  useEffect(() => {
+    if (onSeatsChange) {
+      onSeatsChange(temporarySelectedSeats);
+    }
+  }, [temporarySelectedSeats, onSeatsChange]);
 
   const handleSeatClick = (seat: Seat) => {
     if (!seat.isAvailable) return;
@@ -194,90 +239,11 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({ tripId, basePrice, onConf
         </div>
       </div>
       
-      {/* Selected seats summary */}
-      <div className="border-t border-gray-200 pt-4">
-        <h4 className="font-medium text-gray-700 mb-2">Ghế đang chọn</h4>
-        
-        {temporarySelectedSeats.length > 0 ? (
-          <div>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {temporarySelectedSeats.map((seat) => (
-                <div key={seat.id} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  {seat.number}
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-gray-600">Tổng tiền:</span>
-              <span className="text-lg font-semibold text-blue-700">
-                {new Intl.NumberFormat('vi-VN', {
-                  style: 'currency',
-                  currency: 'VND'
-                }).format(temporarySelectedSeats.length * basePrice)}
-              </span>
-            </div>
 
-            <button
-              onClick={async () => {
-                if (onConfirmSeats) {
-                  setIsConfirming(true);
-                  try {
-                    await seatsServices.selectSeat({
-                      tripId,
-                      seatNumbers: temporarySelectedSeats.map(seat => seat.number)
-                    });
-                    onConfirmSeats(temporarySelectedSeats);
-                    
-                    // Store trip and seat information in localStorage
-                    const tempBookingData = {
-                      tripId,
-                      seats: temporarySelectedSeats,
-                      timestamp: new Date().toISOString()
-                    };
-                    localStorage.setItem(TEMP_BOOKING_KEY, JSON.stringify(tempBookingData));
-                    
-                    // Store the count before clearing
-                    const count = temporarySelectedSeats.length;
-                    // Clear temporary selections after confirmation
-                    setTemporarySelectedSeats([]);
-                    // Show confirmation message with correct count
-                    setConfirmedSeatCount(count);
-                    setShowConfirmationMessage(true);
-                  } catch (err: any) {
-                    console.error('Failed to confirm seats:', err);
-                    if (err.response?.status === 400 && err.response?.data?.message?.includes('seat')) {
-                      alert('Một số ghế đã được người khác chọn. Vui lòng chọn ghế khác.');
-                      // Refresh available seats
-                      const updatedSeats = await seatsServices.getAvailableSeats(tripId);
-                      setAvailableSeats(updatedSeats.map(seat => ({
-                        id: seat.seatId,
-                        number: seat.seatNumber,
-                        isAvailable: seat.isAvailable,
-                        price: basePrice,
-                        type: 'standard',
-                        tripId: tripId
-                      })));
-                    } else {
-                      alert('Không thể xác nhận ghế. Vui lòng thử lại.');
-                    }
-                  } finally {
-                    setIsConfirming(false);
-                  }
-                }
-              }}
-              disabled={isConfirming || temporarySelectedSeats.length === 0}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              {isConfirming ? 'Đang xác nhận...' : 'Xác nhận chọn ghế'}
-            </button>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-sm">Vui lòng chọn ít nhất một ghế</p>
-        )}
-      </div>
     </div>
   );
-};
+});
+
+SeatSelection.displayName = 'SeatSelection';
 
 export default SeatSelection;

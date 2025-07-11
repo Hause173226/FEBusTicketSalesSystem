@@ -3,25 +3,24 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
-import { format, parseISO } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import { ArrowLeft, Download, Printer, Bus, Calendar,  MapPin, Users } from 'lucide-react';
-import { routes } from '../data';
 import { useAppContext } from '../context/AppContext';
+import { Booking } from '../types';
+import { formatDate, formatPrice } from '../utils/dateUtils';
 
 const TicketPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
-  const { user, currentBooking } = useAppContext();
+  const { profile, currentBooking } = useAppContext();
   const navigate = useNavigate();
   const ticketRef = useRef<HTMLDivElement>(null);
   
   // Find booking either from current booking or user bookings
   const booking = currentBooking?._id === bookingId
     ? currentBooking
-    : user?.bookings.find(b => b._id === bookingId);
+    : profile?.bookings.find((b: Booking) => b._id === bookingId);
   
-  // Find route information
-  const route = booking?.trip ? routes.find(r => r._id === booking.trip.route._id && r.originStation._id === booking.pickupStation._id && r.destinationStation._id === booking.dropoffStation._id ) : null;
+  // Use route information from booking data
+  const route = booking?.trip?.route;
   
   if (!booking || !route) {
     return (
@@ -36,21 +35,6 @@ const TicketPage: React.FC = () => {
       </div>
     );
   }
-  
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
-  
-  const formatDate = (dateString: string) => {
-    try {
-      return format(parseISO(dateString), 'EEEE, dd/MM/yyyy', { locale: vi });
-    } catch (error) {
-      return dateString;
-    }
-  };
   
   const generatePDF = () => {
     if (!ticketRef.current) return;
@@ -73,7 +57,7 @@ const TicketPage: React.FC = () => {
     
     // Add route information
     pdf.setFontSize(14);
-    pdf.text(`${route.from} - ${route.to}`, 105, 40, { align: 'center' });
+    pdf.text(`${booking.pickupStation?.name || (route as any)?.from} - ${booking.dropoffStation?.name || (route as any)?.to}`, 105, 40, { align: 'center' });
     
     // Add line separator
     pdf.setDrawColor(200, 200, 200);
@@ -81,22 +65,22 @@ const TicketPage: React.FC = () => {
     
     // Add ticket details
     pdf.setFontSize(12);
-    pdf.text(`Mã vé: ${booking.id}`, 20, 55);
-    pdf.text(`Ngày đi: ${formatDate(booking.travelDate)}`, 20, 65);
-    pdf.text(`Giờ khởi hành: ${route.departureTime}`, 20, 75);
-    pdf.text(`Nhà xe: ${route.company}`, 20, 85);
-    pdf.text(`Loại xe: ${route.busType}`, 20, 95);
+    pdf.text(`Mã vé: ${booking.bookingCode || booking._id}`, 20, 55);
+    pdf.text(`Ngày đi: ${booking.trip?.departureDate ? formatDate(booking.trip.departureDate) : 'Chưa xác định'}`, 20, 65);
+    pdf.text(`Giờ khởi hành: ${booking.trip?.departureTime || (route as any)?.departureTime}`, 20, 75);
+    pdf.text(`Nhà xe: ${booking.trip?.bus?.operator || (route as any)?.company}`, 20, 85);
+    pdf.text(`Loại xe: ${booking.trip?.bus?.busType || (route as any)?.busType}`, 20, 95);
     
     // Add passenger info
     pdf.text(`Thông tin hành khách:`, 20, 110);
-    pdf.text(`Họ tên: ${user?.name || 'N/A'}`, 30, 120);
-    pdf.text(`Số điện thoại: ${user?.phone || 'N/A'}`, 30, 130);
-    pdf.text(`Email: ${user?.email || 'N/A'}`, 30, 140);
+    pdf.text(`Họ tên: ${profile?.fullName || 'N/A'}`, 30, 120);
+    pdf.text(`Số điện thoại: ${profile?.phone || 'N/A'}`, 30, 130);
+    pdf.text(`Email: ${profile?.email || 'N/A'}`, 30, 140);
     
     // Add seat info
-    pdf.text(`Số ghế: ${booking.seatIds.map((_, i) => `A${i + 1}`).join(', ')}`, 20, 155);
-    pdf.text(`Tổng tiền: ${formatPrice(booking.totalPrice)}`, 20, 165);
-    pdf.text(`Phương thức thanh toán: ${booking.paymentMethod}`, 20, 175);
+    pdf.text(`Số ghế: ${booking.seatNumbers?.join(', ') || 'N/A'}`, 20, 155);
+    pdf.text(`Tổng tiền: ${formatPrice(booking.totalAmount || 0)}`, 20, 165);
+    pdf.text(`Phương thức thanh toán: ${booking.paymentMethod || 'N/A'}`, 20, 175);
     
     // Add QR code (placeholder - in a real app, you'd need to generate this properly)
     pdf.addImage(
@@ -114,7 +98,7 @@ const TicketPage: React.FC = () => {
     pdf.text('Vui lòng đến trước giờ khởi hành 30 phút. Vé đã thanh toán không hoàn tiền.', 105, 250, { align: 'center' });
     pdf.text('BusGo © 2023 - Đặt vé nhanh - Giá tốt - Tiện lợi', 105, 260, { align: 'center' });
     
-    pdf.save(`ve-xe-${booking.id}.pdf`);
+    pdf.save(`ve-xe-${booking.bookingCode || booking._id}.pdf`);
   };
   
   const handlePrint = () => {
@@ -151,12 +135,14 @@ const TicketPage: React.FC = () => {
               <div className="flex space-x-2">
                 <button
                   onClick={generatePDF}
+                  title="Tải xuống PDF"
                   className="flex items-center p-2 bg-white bg-opacity-20 rounded-md hover:bg-opacity-30 transition-colors duration-200"
                 >
                   <Download className="h-5 w-5" />
                 </button>
                 <button
                   onClick={handlePrint}
+                  title="In vé"
                   className="flex items-center p-2 bg-white bg-opacity-20 rounded-md hover:bg-opacity-30 transition-colors duration-200"
                 >
                   <Printer className="h-5 w-5" />
@@ -181,8 +167,8 @@ const TicketPage: React.FC = () => {
                         <div className="absolute top-4 bottom-0 left-1.5 w-1 h-12 bg-gray-300"></div>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{route.from}</p>
-                        <p className="text-sm text-gray-500">{route.departureTime}</p>
+                        <p className="font-medium text-gray-800">{booking.pickupStation?.name || (route as any)?.from}</p>
+                        <p className="text-sm text-gray-500">{booking.trip?.departureTime || (route as any)?.departureTime}</p>
                       </div>
                     </div>
                     
@@ -191,8 +177,8 @@ const TicketPage: React.FC = () => {
                         <div className="w-4 h-4 bg-green-600 rounded-full"></div>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{route.to}</p>
-                        <p className="text-sm text-gray-500">{route.arrivalTime}</p>
+                        <p className="font-medium text-gray-800">{booking.dropoffStation?.name || (route as any)?.to}</p>
+                        <p className="text-sm text-gray-500">{booking.trip?.arrivalTime || (route as any)?.arrivalTime}</p>
                       </div>
                     </div>
                   </div>
@@ -207,19 +193,19 @@ const TicketPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-500">Nhà xe</p>
-                      <p className="font-medium text-gray-800">{route.company}</p>
+                      <p className="font-medium text-gray-800">{booking.trip?.bus?.operator || (route as any)?.company}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Loại xe</p>
-                      <p className="font-medium text-gray-800">{route.busType}</p>
+                      <p className="font-medium text-gray-800">{booking.trip?.bus?.busType || (route as any)?.busType}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Ngày đi</p>
-                      <p className="font-medium text-gray-800">{formatDate(booking.travelDate)}</p>
+                      <p className="font-medium text-gray-800">{booking.trip?.departureDate ? formatDate(booking.trip.departureDate) : 'Chưa xác định'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Mã vé</p>
-                      <p className="font-medium text-gray-800">{booking.id}</p>
+                      <p className="font-medium text-gray-800">{booking.bookingCode || booking._id}</p>
                     </div>
                   </div>
                 </div>
@@ -233,22 +219,22 @@ const TicketPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-500">Họ tên</p>
-                      <p className="font-medium text-gray-800">{user?.name || 'N/A'}</p>
+                      <p className="font-medium text-gray-800">{profile?.fullName || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Số điện thoại</p>
-                      <p className="font-medium text-gray-800">{user?.phone || 'N/A'}</p>
+                      <p className="font-medium text-gray-800">{profile?.phone || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium text-gray-800">{user?.email || 'N/A'}</p>
+                      <p className="font-medium text-gray-800">{profile?.email || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Số ghế</p>
                       <div className="flex flex-wrap gap-2 mt-1">
-                        {booking.seatIds.map((_, index) => (
+                        {booking.seatNumbers?.map((seatNumber: string, index: number) => (
                           <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
-                            A{index + 1}
+                            {seatNumber}
                           </span>
                         ))}
                       </div>
@@ -261,8 +247,8 @@ const TicketPage: React.FC = () => {
                   
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between mb-2">
-                      <span className="text-gray-600">Giá vé ({booking.seatIds.length} ghế)</span>
-                      <span>{formatPrice(route.price * booking.seatIds.length)}</span>
+                      <span className="text-gray-600">Giá vé ({booking.seatNumbers?.length || 0} ghế)</span>
+                      <span>{formatPrice((route as any)?.price * (booking.seatNumbers?.length || 0) || booking.totalAmount || 0)}</span>
                     </div>
                     <div className="flex justify-between mb-2">
                       <span className="text-gray-600">Phí dịch vụ</span>
@@ -271,10 +257,10 @@ const TicketPage: React.FC = () => {
                     <div className="border-t border-gray-200 pt-2 mt-2">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">Tổng cộng</span>
-                        <span className="text-lg font-semibold text-blue-700">{formatPrice(booking.totalPrice)}</span>
+                        <span className="text-lg font-semibold text-blue-700">{formatPrice(booking.totalAmount || 0)}</span>
                       </div>
                       <div className="mt-1">
-                        <span className="text-sm text-gray-500">Phương thức thanh toán: {booking.paymentMethod}</span>
+                        <span className="text-sm text-gray-500">Phương thức thanh toán: {booking.paymentMethod || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
@@ -285,7 +271,7 @@ const TicketPage: React.FC = () => {
                 <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                   <div id="qr-code-svg">
                     <QRCodeSVG
-                      value={`BUSGO-TICKET-${booking.id}`}
+                      value={`BUSGO-TICKET-${booking.bookingCode || booking._id}`}
                       size={180}
                       level="H"
                       fgColor="#1A56DB"
@@ -301,7 +287,7 @@ const TicketPage: React.FC = () => {
           <div className="p-6 bg-gray-50 border-t border-gray-200">
             <p className="text-gray-600 text-sm">
               <span className="font-medium">Lưu ý:</span> Vui lòng đến trước giờ khởi hành 30 phút. Xuất trình mã QR cho nhân viên để được lên xe.
-              {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+              {booking.bookingStatus !== 'cancelled' && booking.bookingStatus !== 'completed' && (
                 <span className="block mt-1">
                   Để hủy vé, vui lòng truy cập trang quản lý vé trong phần "Tài khoản" của bạn.
                 </span>

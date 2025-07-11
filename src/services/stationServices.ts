@@ -10,7 +10,8 @@ export const getAllStations = async (): Promise<Station[]> => {
 // Get station by ID
 export const getStationById = async (id: string): Promise<Station> => {
   const response = await axiosInstance.get(`/station/${id}`);
-  return response.data;
+  // Xử lý cấu trúc response API {success, data} nếu cần
+  return response.data.data || response.data;
 };
 
 interface CreateStationRequest {

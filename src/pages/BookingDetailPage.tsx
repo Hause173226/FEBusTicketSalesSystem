@@ -169,7 +169,14 @@ const BookingDetailPage = () => {
                         <p className="text-sm text-gray-500">Ngày khởi hành</p>
                         <p className="font-medium text-gray-900">
                           {bookingDetail.trip?.departureDate ? 
-                            new Date(bookingDetail.trip.departureDate).toLocaleDateString('vi-VN') : 
+                            (() => {
+                              try {
+                                const date = new Date(bookingDetail.trip.departureDate);
+                                return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('vi-VN');
+                              } catch {
+                                return 'N/A';
+                              }
+                            })() : 
                             'N/A'
                           }
                         </p>

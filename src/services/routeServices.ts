@@ -8,6 +8,10 @@ export const getAllRoutes = async (): Promise<Route[]> => {
 
 export const getRouteById = async (id: string): Promise<Route> => {
   const response = await axiosInstance.get(`/route/${id}`);
+  // Kiểm tra xem API trả về có cấu trúc {success, data} không
+  if (response.data.data) {
+    return response.data.data;
+  }
   return response.data;
 };
 
