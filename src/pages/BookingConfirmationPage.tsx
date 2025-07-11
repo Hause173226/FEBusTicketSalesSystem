@@ -123,17 +123,12 @@ const BookingConfirmationPage = () => {
       if (bookingData && bookingData._id) {
         try {
           await cancelBooking(bookingData._id);
-          toast.success('Đã hủy booking trên server thành công');
         } catch (error: any) {
           // Nếu lỗi 404 (booking không tồn tại), coi như thành công
-          if (error.response?.status === 404) {
-            toast.success('Booking không tồn tại trên server');
-          } else {
+          if (error.response?.status !== 404) {
             toast.error(`Lỗi khi hủy booking: ${error.response?.data?.message || error.message}`);
           }
         }
-      } else {
-        toast.success('Đây là booking tạm thời');
       }
       
       // Luôn giải phóng ghế nếu có thông tin ghế và trip
