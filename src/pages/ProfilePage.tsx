@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Ticket, Edit, LogOut, Save, X, Camera } from 'lucide-react'; 
+import { User, Ticket, Edit, LogOut, Save, X, Camera, Clipboard } from 'lucide-react'; 
 import TicketCard from '../components/TicketCard';
 import { useAppContext } from '../context/AppContext';
 import { signoutService } from '../services/signoutService';
@@ -20,6 +20,7 @@ const ProfilePage: React.FC = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showPasteButton, setShowPasteButton] = useState(false);
   const [formData, setFormData] = useState<Profile>({
     _id: '',
     fullName: '',
@@ -80,44 +81,77 @@ const ProfilePage: React.FC = () => {
       fetchUserBookings();
     }
   }, [activeTab, isLoggedIn]);
-  
-  if (!profile) {
-    return (
-      <div className="container mx-auto px-4 py-16 mt-16 text-center">
-        <p className="text-gray-600">Đang tải...</p>
-      </div>
-    );
-  }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Add clipboard paste functionality
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+      const items = Array.from(e.clipboardData.items);
+      const imageItem = items.find(item => item.type.startsWith('image/'));
+
+      if (imageItem) {
+        e.preventDefault();
+        const file = imageItem.getAsFile();
+        if (file) {
+          await handleImageFromFile(file);
+        }
+      }
+    };
+
+    // Check if clipboard API is available
+    const checkClipboardSupport = async () => {
+      if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
+        try {
+          const permission = await navigator.permissions.query({ name: 'clipboard-read' as any });
+          setShowPasteButton(permission.state === 'granted' || permission.state === 'prompt');
+        } catch (error) {
+          // Fallback to document paste event
+          setShowPasteButton(true);
+        }
+      } else {
+        // Show paste button anyway for manual paste with Ctrl+V
+        setShowPasteButton(true);
+      }
+    };
+
+    checkClipboardSupport();
+    document.addEventListener('paste', handlePaste);
+
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  // Handle paste from clipboard button
+  const handlePasteFromClipboard = async () => {
     try {
-      const response = await userServices.updateProfile(formData);
-      const updatedProfile = { ...profile, ...response.data };
-      setProfile(updatedProfile);
-      
-      // Also update localStorage to persist the changes
-      localStorage.setItem('profile', JSON.stringify(updatedProfile));
-      
-      setIsEditing(false);
-      toast.success('Cập nhật thông tin thành công!');
+      if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
+        const clipboardItems = await navigator.clipboard.read();
+        
+        for (const clipboardItem of clipboardItems) {
+          for (const type of clipboardItem.types) {
+            if (type.startsWith('image/')) {
+              const blob = await clipboardItem.getType(type);
+              const file = new File([blob], 'pasted-image.png', { type });
+              await handleImageFromFile(file);
+              return;
+            }
+          }
+        }
+        
+        toast.error('Không tìm thấy ảnh trong clipboard!');
+      } else {
+        toast.error('Trình duyệt không hỗ trợ paste từ clipboard!');
+      }
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi cập nhật thông tin!');
+      console.error('Clipboard paste error:', error);
+      toast.error('Không thể paste ảnh từ clipboard. Hãy thử Ctrl+V sau khi click vào vùng upload!');
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // Extract image handling logic to reusable function
+  const handleImageFromFile = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Vui lòng chọn file ảnh!');
@@ -163,7 +197,10 @@ const ProfilePage: React.FC = () => {
       }
       
       if (imageUrl) {
-        const updatedProfile = { ...profile, profileImage: imageUrl };
+        const updatedProfile = { 
+          ...profile, 
+          profileImage: imageUrl
+        } as Profile;
         setProfile(updatedProfile);
         
         // Also update localStorage to persist the image
@@ -209,6 +246,46 @@ const ProfilePage: React.FC = () => {
         fileInputRef.current.value = '';
       }
     }
+  };
+  
+  if (!profile) {
+    return (
+      <div className="container mx-auto px-4 py-16 mt-16 text-center">
+        <p className="text-gray-600">Đang tải...</p>
+      </div>
+    );
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await userServices.updateProfile(formData);
+      const updatedProfile = { ...profile, ...response.data };
+      setProfile(updatedProfile);
+      
+      // Also update localStorage to persist the changes
+      localStorage.setItem('profile', JSON.stringify(updatedProfile));
+      
+      setIsEditing(false);
+      toast.success('Cập nhật thông tin thành công!');
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi cập nhật thông tin!');
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    await handleImageFromFile(file);
   };
 
   const triggerFileInput = () => {
@@ -315,6 +392,11 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <h2 className="text-lg font-semibold">{profile.fullName}</h2>
                   <p className="text-blue-100">{profile.email}</p>
+                  {showPasteButton && (
+                    <p className="text-blue-200 text-xs mt-2 text-center">
+                      💡 Tip: Copy ảnh và nhấn Ctrl+V để dán nhanh
+                    </p>
+                  )}
                 </div>
               </div>
               
