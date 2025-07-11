@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import { getBookingById, cancelBooking } from '../services/bookingServices';
 import { seatsServices } from '../services/seatsServices';
 import { toast } from 'react-hot-toast';
+import { formatDateSimple, formatPrice, formatTime } from '../utils/dateUtils';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
@@ -171,21 +172,6 @@ const BookingConfirmationPage = () => {
     setShowCancelModal(false);
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  const formatTime = (timeString: string) => {
-    return timeString;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -328,7 +314,7 @@ const BookingConfirmationPage = () => {
                         <p className="text-sm text-gray-500">Ngày khởi hành</p>
                         <p className="font-medium text-gray-900">
                           {bookingData.trip?.departureDate ? 
-                            formatDate(bookingData.trip.departureDate) : 
+                            formatDateSimple(bookingData.trip.departureDate) : 
                             'N/A'
                           }
                         </p>
