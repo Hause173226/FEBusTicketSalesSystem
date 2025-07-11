@@ -20,6 +20,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
 import VNPayReturnPage from './hooks/VNPayReturnPage';
 import BookingDetailPage from './pages/BookingDetailPage';
+import BookingConfirmationPage from './pages/BookingConfirmationPage';
 import PaymentDetailsPage from './hooks/PaymentDetailsPage';
 import VNPayPaymentPage from './hooks/VNPayPaymentPage';
 
@@ -47,6 +48,7 @@ function App() {
             <Route path="reset-password" element={<ResetPasswordPage />} />
             <Route path="search-results" element={<SearchResultsPage />} />
             <Route path="booking" element={<BookingsPage />} />
+            <Route path="booking-confirmation/:bookingId" element={<BookingConfirmationPage />} />
             <Route path="booking-details/:orderId" element={<BookingDetailPage />} />
             <Route path="payment-details/:orderId" element={<PaymentDetailsPage />} />
 

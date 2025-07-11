@@ -117,14 +117,20 @@ const BookingPage: React.FC = () => {
 
       const booking = await createBooking(bookingData);
 
-      // Store booking ID for payment
+      // Store booking ID and additional info for confirmation page
       const tempBookingData = {
-        bookingId: booking._id
+        bookingId: booking._id,
+        bookingCode: booking.bookingCode,
+        tripData: trip,
+        seatData: selectedSeats,
+        customerData: profile
       };
 
       localStorage.setItem(TEMP_BOOKING_KEY, JSON.stringify(tempBookingData));
       setCurrentSelectedSeats(selectedSeats);
-      setShowPaymentConfirmation(true);
+      
+      // Navigate to booking confirmation page instead of payment
+      navigate(`/booking-confirmation/${booking._id}`);
       
     } catch (err: any) {
       console.error('Booking error:', err);

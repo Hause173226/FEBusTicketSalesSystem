@@ -41,7 +41,8 @@ const PaymentMethods: React.FC<PaymentMethodsProps> = ({ onPaymentComplete }) =>
         bookingId: booking._id
       });
 
-      navigate(`/payment/vnpay/${booking._id}`);
+      // Navigate to booking confirmation page instead of direct payment
+      navigate(`/booking-confirmation/${booking._id}`);
       onPaymentComplete(booking._id);
     } catch (err: any) {
       console.error('Payment error:', err);
