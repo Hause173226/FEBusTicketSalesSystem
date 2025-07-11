@@ -29,13 +29,13 @@ export const getUserBookings = async () => {
 
 // Cancel a booking
 export const cancelBooking = async (bookingId: string) => {
-  const response = await axiosInstance.patch<{ data: Booking }>(`/booking/cancel/${bookingId}`);
+  const response = await axiosInstance.put<{ data: Booking }>(`/booking/cancel/${bookingId}`);
   return response.data.data;
 };
 
 // Update booking payment status
 export const updateBookingPaymentStatus = async (bookingId: string, paymentStatus: string) => {
-  const response = await axiosInstance.patch<{ data: Booking }>(`/booking/${bookingId}/payment-status`, {
+  const response = await axiosInstance.put<{ data: Booking }>(`/booking/${bookingId}/payment-status`, {
     paymentStatus
   });
   return response.data.data;

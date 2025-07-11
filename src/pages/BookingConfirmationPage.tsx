@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, User, Phone, Mail, Calendar, Bus, CreditCard, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { getBookingById } from '../services/bookingServices';
+import { getBookingById, cancelBooking } from '../services/bookingServices';
+import { seatsServices } from '../services/seatsServices';
 import { toast } from 'react-hot-toast';
 
 const BookingConfirmationPage = () => {
@@ -13,18 +14,12 @@ const BookingConfirmationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<any>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     const loadBookingInfo = async () => {
       try {
         setLoading(true);
-        
-        console.log('BookingConfirmationPage - Loading booking info...', { 
-          bookingId, 
-          hasSelectedTrip: !!selectedTrip, 
-          hasSelectedSeats: !!selectedSeats, 
-          hasProfile: !!profile 
-        });
         
         if (!bookingId) {
           throw new Error("Mã đặt vé không hợp lệ");
@@ -32,13 +27,13 @@ const BookingConfirmationPage = () => {
 
         // Thử lấy từ API trước
         try {
-          console.log('Trying to fetch booking from API...', bookingId);
           const booking = await getBookingById(bookingId);
-          console.log('Successfully fetched booking from API:', booking);
-          setBookingData(booking);
+          // Đánh dấu là booking thực sự từ database
+          const bookingWithFlag = { ...booking, isRealBooking: true };
+          setBookingData(bookingWithFlag);
           return;
         } catch (apiError) {
-          console.log('API call failed, trying localStorage/context...', apiError);
+          // API call failed, trying localStorage/context...
         }
 
         // Nếu API fail, thử lấy từ localStorage hoặc context
@@ -47,7 +42,6 @@ const BookingConfirmationPage = () => {
         
         if (tempBookingStr) {
           tempBooking = JSON.parse(tempBookingStr);
-          console.log('Found temp booking in localStorage:', tempBooking);
           
           // Nếu có đầy đủ dữ liệu trong localStorage, sử dụng nó
           if (tempBooking.tripData && tempBooking.seatData && tempBooking.customerData) {
@@ -62,7 +56,8 @@ const BookingConfirmationPage = () => {
               totalAmount: tempBooking.seatData.reduce((total: number, seat: any) => total + (seat.price || tempBooking.tripData.basePrice), 0),
               bookingStatus: 'pending',
               paymentStatus: 'pending',
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              isRealBooking: false // Đánh dấu là booking tạm thời
             };
 
             console.log('Created booking from localStorage:', booking);
@@ -73,7 +68,6 @@ const BookingConfirmationPage = () => {
 
         // Kiểm tra xem có đủ thông tin từ context không
         if (selectedTrip && selectedSeats && selectedSeats.length > 0 && profile) {
-          console.log('Creating booking from context data...');
           // Tạo object booking từ thông tin hiện có
           const booking = {
             _id: bookingId || tempBooking?.bookingId,
@@ -86,17 +80,16 @@ const BookingConfirmationPage = () => {
             totalAmount: selectedSeats.reduce((total, seat) => total + (seat.price || selectedTrip.basePrice), 0),
             bookingStatus: 'pending',
             paymentStatus: 'pending',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isRealBooking: false // Đánh dấu là booking tạm thời
           };
 
           console.log('Created booking object:', booking);
           setBookingData(booking);
         } else {
-          console.log('Insufficient data:', { selectedTrip, selectedSeats, profile, tempBooking });
           throw new Error("Không tìm thấy thông tin đặt vé. Vui lòng đặt vé lại.");
         }
       } catch (err: any) {
-        console.error('Error loading booking info:', err);
         const errorMessage = err.message || "Không thể tải thông tin đặt vé";
         setError(errorMessage);
         toast.error(errorMessage);
@@ -115,7 +108,67 @@ const BookingConfirmationPage = () => {
   };
 
   const handleGoBack = () => {
-    navigate(-1);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      setShowCancelModal(false);
+      
+      // Hiển thị loading toast
+      const loadingToast = toast.loading('Đang hủy đặt vé...');
+      
+      // Thử hủy booking qua API nếu có booking ID
+      if (bookingData && bookingData._id) {
+        try {
+          await cancelBooking(bookingData._id);
+          toast.success('Đã hủy booking trên server thành công');
+        } catch (error: any) {
+          // Nếu lỗi 404 (booking không tồn tại), coi như thành công
+          if (error.response?.status === 404) {
+            toast.success('Booking không tồn tại trên server');
+          } else {
+            toast.error(`Lỗi khi hủy booking: ${error.response?.data?.message || error.message}`);
+          }
+        }
+      } else {
+        toast.success('Đây là booking tạm thời');
+      }
+      
+      // Luôn giải phóng ghế nếu có thông tin ghế và trip
+      if (bookingData && bookingData.seatNumbers && bookingData.trip?._id) {
+        try {
+          await seatsServices.releaseSeat({
+            tripId: bookingData.trip._id,
+            seatNumbers: bookingData.seatNumbers
+          });
+        } catch (error) {
+          toast.error('Có lỗi khi giải phóng ghế');
+        }
+      }
+      
+      // Xóa dữ liệu tạm trong localStorage
+      localStorage.removeItem('temp_booking_data');
+      
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      // Hiển thị thông báo thành công cuối cùng
+      toast.success('Đã hủy đặt vé thành công');
+      
+      // Quay về trang trước
+      navigate(-1);
+      
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi hủy đặt vé');
+      
+      // Vẫn quay về trang trước ngay cả khi có lỗi
+      navigate(-1);
+    }
+  };
+
+  const handleCancelModalClose = () => {
+    setShowCancelModal(false);
   };
 
   const formatPrice = (price: number) => {
@@ -416,6 +469,47 @@ const BookingConfirmationPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833-.228 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Xác nhận hủy đặt vé
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Bạn có chắc chắn muốn hủy đặt vé này không? 
+                Hành động này không thể hoàn tác và ghế đã chọn sẽ được giải phóng.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCancelModalClose}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+                >
+                  Giữ đặt vé
+                </button>
+                <button
+                  onClick={handleConfirmCancel}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200"
+                >
+                  Hủy đặt vé
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };
