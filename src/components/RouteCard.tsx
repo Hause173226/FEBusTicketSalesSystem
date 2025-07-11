@@ -18,7 +18,7 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
   const handleSelectRoute = () => {
     // Save initial booking data to localStorage
     const tempBookingData = {
-      tripId: route.id,
+      tripId: route._id,
       timestamp: new Date().toISOString(),
       seats: [] // Will be selected in the booking page
     };
@@ -26,15 +26,7 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
     
     // Set the selected route in context and navigate
     setSelectedRoute(route);
-    navigate(`/booking/${route.id}`);
-  };
-
-  // Format price to VND
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
+    navigate(`/booking/${route._id}`);
   };
 
   return (
@@ -48,12 +40,12 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">{route.company}</h3>
-            <p className="text-sm text-gray-500">{route.busType}</p>
+            <h3 className="text-lg font-semibold text-gray-800">{route.name || 'Route Name'}</h3>
+            <p className="text-sm text-gray-500">{route.code || 'Route Code'}</p>
           </div>
           <div className="text-right">
-            <p className="text-xl font-bold text-blue-700">{formatPrice(route.price)}</p>
-            <p className="text-sm text-gray-500">/người</p>
+            <p className="text-xl font-bold text-blue-700">{route.distanceKm}km</p>
+            <p className="text-sm text-gray-500">/{route.estimatedDuration}h</p>
           </div>
         </div>
 
@@ -62,8 +54,12 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
             <div className="flex items-center">
               <MapPin className="h-5 w-5 text-gray-400 mr-2" />
               <div>
-                <p className="text-gray-800 font-medium">{route.from}</p>
-                <p className="text-sm text-gray-500">{route.departureTime}</p>
+                <p className="text-gray-800 font-medium">
+                  {typeof route.originStation === 'string' 
+                    ? route.originStation 
+                    : route.originStation?.name || 'Điểm xuất phát'}
+                </p>
+                <p className="text-sm text-gray-500">Khởi hành</p>
               </div>
             </div>
           </div>
@@ -74,8 +70,12 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
             <div className="flex items-center">
               <MapPin className="h-5 w-5 text-gray-400 mr-2" />
               <div>
-                <p className="text-gray-800 font-medium">{route.to}</p>
-                <p className="text-sm text-gray-500">{route.arrivalTime}</p>
+                <p className="text-gray-800 font-medium">
+                  {typeof route.destinationStation === 'string' 
+                    ? route.destinationStation 
+                    : route.destinationStation?.name || 'Điểm đến'}
+                </p>
+                <p className="text-sm text-gray-500">Đến nơi</p>
               </div>
             </div>
           </div>
@@ -85,13 +85,13 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1" />
             <span>
-              {calculateDuration(route.departureTime, route.arrivalTime)}
+              {route.estimatedDuration}h
             </span>
           </div>
           <div className="flex items-center">
             <Users className="h-4 w-4 mr-1" />
             <span>
-              {route.availableSeats}/{route.totalSeats} chỗ trống
+              {route.distanceKm}km - {route.status}
             </span>
           </div>
         </div>
@@ -105,26 +105,6 @@ const RouteCard: React.FC<RouteCardProps> = ({ route }) => {
       </div>
     </motion.div>
   );
-};
-
-// Helper function to calculate duration between two time strings
-const calculateDuration = (departureTime: string, arrivalTime: string) => {
-  const [departureHour, departureMinute] = departureTime.split(':').map(Number);
-  const [arrivalHour, arrivalMinute] = arrivalTime.split(':').map(Number);
-  
-  let hourDiff = arrivalHour - departureHour;
-  let minuteDiff = arrivalMinute - departureMinute;
-  
-  if (minuteDiff < 0) {
-    hourDiff--;
-    minuteDiff += 60;
-  }
-  
-  if (hourDiff < 0) {
-    hourDiff += 24;
-  }
-  
-  return `${hourDiff}h ${minuteDiff}m`;
 };
 
 export default RouteCard;

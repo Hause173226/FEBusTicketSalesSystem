@@ -106,11 +106,23 @@ const BookingPage: React.FC = () => {
       }
 
       // Create booking first
+      // Type guards to ensure stations exist and are Station objects
+      const originStation = trip.route.originStation;
+      const destinationStation = trip.route.destinationStation;
+      
+      if (!originStation || !destinationStation) {
+        throw new Error('Thông tin tuyến đường không đầy đủ');
+      }
+      
+      // Handle both string and Station object cases
+      const pickupStationId = typeof originStation === 'string' ? originStation : originStation._id;
+      const dropoffStationId = typeof destinationStation === 'string' ? destinationStation : destinationStation._id;
+      
       const bookingData = {
         trip: trip._id,
         customer: profile._id,
-        pickupStation: trip.route.originStation._id,
-        dropoffStation: trip.route.destinationStation._id,
+        pickupStation: pickupStationId,
+        dropoffStation: dropoffStationId,
         seatNumbers: selectedSeats.map((seat: Seat) => seat.number),
         totalAmount: trip.basePrice * selectedSeats.length
       };
@@ -237,7 +249,12 @@ const BookingPage: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-600">Điểm đón</p>
                       <p className="font-medium text-gray-800">
-                        {trip.route.originStation.name }
+                        {trip.route.originStation 
+                          ? (typeof trip.route.originStation === 'string' 
+                              ? trip.route.originStation 
+                              : trip.route.originStation.name)
+                          : 'Chưa có thông tin'
+                        }
                       </p>
 
                     </div>
@@ -248,7 +265,12 @@ const BookingPage: React.FC = () => {
                     <div>
                       <p className="text-sm text-gray-600">Điểm trả</p>
                       <p className="font-medium text-gray-800">
-                        {trip.route.destinationStation.name}
+                        {trip.route.destinationStation
+                          ? (typeof trip.route.destinationStation === 'string' 
+                              ? trip.route.destinationStation 
+                              : trip.route.destinationStation.name)
+                          : 'Chưa có thông tin'
+                        }
                       </p>
                     </div>
                   </div>
