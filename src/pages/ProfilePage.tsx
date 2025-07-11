@@ -337,13 +337,6 @@ const ProfilePage: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-gray-800">Vé đã đặt</h2>
-                    <button 
-                      onClick={fetchUserBookings}
-                      className="text-blue-700 hover:underline text-sm"
-                      disabled={isLoadingBookings}
-                    >
-                      {isLoadingBookings ? 'Đang tải...' : 'Làm mới'}
-                    </button>
                   </div>
                   <div className="space-y-4">
                     {isLoadingBookings ? (
