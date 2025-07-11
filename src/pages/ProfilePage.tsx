@@ -27,6 +27,7 @@ const ProfilePage: React.FC = () => {
     address: '',
     role: '',
     bookings: [],
+    avatar: '',
   });
   const navigate = useNavigate();
   
@@ -49,6 +50,7 @@ const ProfilePage: React.FC = () => {
         address: profile.address || '',
         role: profile.role,
         bookings: profile.bookings || [],
+        avatar: profile.avatar || '',
       });
     }
   }, [profile]);
@@ -95,7 +97,7 @@ const ProfilePage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await userServices.updateProfile(formData);
+      const response = await userServices.updateProfile({ ...formData, avatar: formData.avatar });
       setProfile({ ...profile, ...response.data });
       setIsEditing(false);
       toast.success('Cập nhật thông tin thành công!');
@@ -130,8 +132,16 @@ const ProfilePage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="p-6 bg-blue-700 text-white">
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-700 text-2xl font-bold mb-4">
-                    {profile.fullName.charAt(0)}
+                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-blue-700 text-2xl font-bold mb-4 overflow-hidden">
+                    {(isEditing ? formData.avatar : profile.avatar) ? (
+                      <img
+                        src={isEditing ? formData.avatar : profile.avatar}
+                        alt="Avatar"
+                        className="w-20 h-20 object-cover rounded-full"
+                      />
+                    ) : (
+                      (isEditing ? (formData.fullName?.charAt(0) || "?") : (profile.fullName?.charAt(0) || "?"))
+                    )}
                   </div>
                   <h2 className="text-lg font-semibold">{profile.fullName}</h2>
                   <p className="text-blue-100">{profile.email}</p>
@@ -221,6 +231,31 @@ const ProfilePage: React.FC = () => {
                     )}
                   </div>
                   
+                  {/* Avatar upload khi chỉnh sửa */}
+                  {isEditing && (
+                    <div className="flex flex-col items-center mb-6">
+                      <label htmlFor="avatar" className="block text-sm text-gray-500 mb-1">Ảnh đại diện</label>
+                      <input
+                        id="avatar"
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="mb-2"
+                      />
+                      {formData.avatar && (
+                        <img src={formData.avatar} alt="Avatar preview" className="w-20 h-20 object-cover rounded-full border" />
+                      )}
+                    </div>
+                  )}
                   {!isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>

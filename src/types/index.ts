@@ -9,6 +9,7 @@ export interface Route {
   status: string;
   createdAt: string;
   updatedAt: string;
+  avatar?: string;
   __v?: number;
 }
 
@@ -81,6 +82,7 @@ export interface Profile {
   address?: string;
   role: string;
   bookings: Booking[];
+  avatar?: string; // Thêm trường avatar
   createdAt?: string;
   updatedAt?: string;
 }
