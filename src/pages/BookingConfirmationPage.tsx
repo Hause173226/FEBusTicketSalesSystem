@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, User, Phone, Mail, Calendar, Bus, CreditCard, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { getBookingById, cancelBooking } from '../services/bookingServices';
+import { cancelBooking } from '../services/bookingServices';
 import { seatsServices } from '../services/seatsServices';
 import { toast } from 'react-hot-toast';
 import { formatDateSimple, formatPrice, formatTime } from '../utils/dateUtils';
@@ -26,18 +26,7 @@ const BookingConfirmationPage = () => {
           throw new Error("Mã đặt vé không hợp lệ");
         }
 
-        // Thử lấy từ API trước
-        try {
-          const booking = await getBookingById(bookingId);
-          // Đánh dấu là booking thực sự từ database
-          const bookingWithFlag = { ...booking, isRealBooking: true };
-          setBookingData(bookingWithFlag);
-          return;
-        } catch (apiError) {
-          // API call failed, trying localStorage/context...
-        }
-
-        // Nếu API fail, thử lấy từ localStorage hoặc context
+        // Lấy từ localStorage hoặc context
         const tempBookingStr = localStorage.getItem('temp_booking_data');
         let tempBooking: any = null;
         
@@ -61,7 +50,6 @@ const BookingConfirmationPage = () => {
               isRealBooking: false // Đánh dấu là booking tạm thời
             };
 
-            console.log('Created booking from localStorage:', booking);
             setBookingData(booking);
             return;
           }
@@ -85,7 +73,6 @@ const BookingConfirmationPage = () => {
             isRealBooking: false // Đánh dấu là booking tạm thời
           };
 
-          console.log('Created booking object:', booking);
           setBookingData(booking);
         } else {
           throw new Error("Không tìm thấy thông tin đặt vé. Vui lòng đặt vé lại.");
@@ -100,7 +87,7 @@ const BookingConfirmationPage = () => {
     };
 
     loadBookingInfo();
-  }, [bookingId, selectedTrip, selectedSeats, profile]);
+  }, [bookingId]);
 
   const handleProceedToPayment = () => {
     if (bookingData) {
