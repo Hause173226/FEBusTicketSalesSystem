@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { isAuthenticated } from '../utils/authUtils';
 import { 
   ArrowLeft, 
   Clock, 
@@ -16,13 +18,9 @@ import { Route, Trip, Station } from '../types';
 import { getRouteById } from '../services/routeServices';
 import { getTripsByRoute } from '../services/tripServices';
 import { getStationById } from '../services/stationServices';
-import { useAppContext } from '../context/AppContext';
-
 const RouteDetailPage: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
   const navigate = useNavigate();
-  const { profile } = useAppContext();
-  
   const [route, setRoute] = useState<Route | null>(null);
   const [originStation, setOriginStation] = useState<Station | null>(null);
   const [destinationStation, setDestinationStation] = useState<Station | null>(null);
@@ -110,7 +108,14 @@ const RouteDetailPage: React.FC = () => {
   };
 
   const handleBookTrip = (trip: Trip) => {
-    if (!profile) {
+    if (!isAuthenticated()) {
+      toast.error('Vui lòng đăng nhập để đặt vé!', {
+        duration: 3000,
+        style: {
+          background: '#ef4444',
+          color: 'white',
+        },
+      });
       navigate('/login');
       return;
     }
@@ -346,7 +351,7 @@ const RouteDetailPage: React.FC = () => {
                           onClick={() => handleBookTrip(trip)}
                           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         >
-                          Đặt vé
+                          Chọn chuyến
                         </button>
                       )}
                     </div>
