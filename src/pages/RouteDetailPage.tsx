@@ -9,9 +9,6 @@ import {
   MapPin, 
   Route as RouteIcon, 
   Bus,
-  Calendar,
-  DollarSign,
-  Users,
   AlertCircle
 } from 'lucide-react';
 import { Route, Trip, Station } from '../types';
@@ -83,10 +80,7 @@ const RouteDetailPage: React.FC = () => {
     }).format(price);
   };
 
-  const formatDateTime = (date: string, time: string): string => {
-    const tripDate = new Date(date);
-    return `${tripDate.toLocaleDateString('vi-VN')} - ${time}`;
-  };
+
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -146,7 +140,7 @@ const RouteDetailPage: React.FC = () => {
             <p className="text-red-600 mb-4">{error || 'Không tìm thấy tuyến đường'}</p>
             <button
               onClick={() => navigate('/routes')}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              className="route-detail__back-btn px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Quay lại danh sách tuyến đường
             </button>
@@ -261,101 +255,107 @@ const RouteDetailPage: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all"
+                  className="bg-white rounded-lg shadow-md p-6 hover:bg-gray-50 transition-all cursor-pointer"
+                  whileHover={{ backgroundColor: "#f9fafb" }}
                 >
-                  <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Bus className="h-5 w-5 text-blue-600" />
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          Chuyến {trip.tripCode}
-                        </h3>
-                        {getStatusBadge(trip.status)}
+                  <div className="flex items-center justify-between">
+                    {/* Trip Info Left */}
+                    <div className="flex items-center gap-6">
+                      {/* Bus Image/Icon */}
+                      <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Bus className="h-8 w-8 text-blue-600" />
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Ngày khởi hành</p>
-                            <p className="font-medium">
-                              {formatDateTime(trip.departureDate, trip.departureTime)}
-                            </p>
+                      
+                      {/* Time & Route */}
+                      <div>
+                        <div className="flex items-center gap-4 mb-2">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-800">{trip.departureTime}</div>
+                            <div className="text-sm text-gray-500">{originStation?.name}</div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 px-3">
+                            <div className="h-px bg-gray-300 w-8"></div>
+                            <div className="text-sm text-gray-500">{formatDuration(route.estimatedDuration)}</div>
+                            <div className="h-px bg-gray-300 w-8"></div>
+                          </div>
+                          
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-gray-800">{trip.arrivalTime}</div>
+                            <div className="text-sm text-gray-500">{destinationStation?.name}</div>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Giờ đến dự kiến</p>
-                            <p className="font-medium">{trip.arrivalTime}</p>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <Bus className="h-4 w-4" />
+                            <span>{trip.bus?.busType || 'N/A'}</span>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Giá vé</p>
-                            <p className="font-medium text-blue-600">
-                              {formatPrice(trip.basePrice)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Bus className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Loại xe</p>
-                            <p className="font-medium">{trip.bus?.busType || 'N/A'}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Ghế trống</p>
-                            <p className="font-medium">
-                              {trip.availableSeats || 0}/{trip.bus?.seatCount || 0}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="text-sm text-gray-500">Biển số xe</p>
-                            <p className="font-medium">{trip.bus?.licensePlate || 'N/A'}</p>
+                          <div className="flex items-center gap-1">
+                            <span>Biển số: {trip.bus?.licensePlate || 'N/A'}</span>
                           </div>
                         </div>
                       </div>
-
-                      {trip.notes && (
-                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                          <p className="text-sm text-yellow-800">
-                            <span className="font-medium">Ghi chú:</span> {trip.notes}
-                          </p>
-                        </div>
-                      )}
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      {trip.discountPercentage > 0 && (
-                        <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded">
-                          Giảm {trip.discountPercentage}%
-                        </span>
-                      )}
+                    {/* Price & Book Button */}
+                    <div className="text-right">
+                      <div className="mb-4">
+                        <div className="text-2xl font-bold text-blue-600 mb-1">
+                          {formatPrice(trip.basePrice)}
+                        </div>
+                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          trip.availableSeats > 10
+                            ? 'bg-green-100 text-green-800'
+                            : trip.availableSeats > 0
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                        }`}>
+                          {trip.availableSeats > 0
+                            ? `Còn ${trip.availableSeats} chỗ`
+                            : 'Hết chỗ'
+                          }
+                        </div>
+                      </div>
                       
-                      {/* Booking button */}
-                      {trip.status !== 'cancelled' && trip.status !== 'completed' && (
-                        <button
-                          onClick={() => handleBookTrip(trip)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          Chọn chuyến
-                        </button>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (trip.availableSeats > 0 && trip.status !== 'cancelled' && trip.status !== 'completed') {
+                            handleBookTrip(trip);
+                          }
+                        }}
+                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                          trip.availableSeats > 0 && trip.status !== 'cancelled' && trip.status !== 'completed'
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        }`}
+                        disabled={trip.availableSeats === 0 || trip.status === 'cancelled' || trip.status === 'completed'}
+                      >
+                        {trip.availableSeats > 0 && trip.status !== 'cancelled' && trip.status !== 'completed' 
+                          ? 'Chọn chuyến' 
+                          : 'Hết chỗ'}
+                      </button>
                     </div>
                   </div>
+
+                  {/* Notes Section */}
+                  {(trip.notes || index === 0) && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-4 text-gray-600">
+                          <span>💡 Xác nhận tức thì</span>
+                          <span>🎫 Đổi trả tận nơi</span>
+                          <span>❌ Không cần thanh toán trước</span>
+                        </div>
+                        {trip.notes && (
+                          <div className="text-blue-600">
+                            * {trip.notes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
