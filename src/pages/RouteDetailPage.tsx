@@ -120,8 +120,8 @@ const RouteDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
-        <div className="container mx-auto px-4">
+      <div className="route-detail min-h-screen bg-gray-50 pt-24 pb-12">
+        <div className="route-detail__container container mx-auto px-4">
           <div className="flex justify-center items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Đang tải thông tin tuyến đường...</span>
@@ -133,8 +133,8 @@ const RouteDetailPage: React.FC = () => {
 
   if (error || !route) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-24 pb-12">
-        <div className="container mx-auto px-4">
+      <div className="route-detail min-h-screen bg-gray-50 pt-24 pb-12">
+        <div className="route-detail__container container mx-auto px-4">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">{error || 'Không tìm thấy tuyến đường'}</p>
@@ -151,41 +151,41 @@ const RouteDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-12">
-      <div className="container mx-auto px-4">
+    <div className="route-detail min-h-screen bg-gray-50 pt-24 pb-12">
+      <div className="route-detail__container container mx-auto px-4">
         {/* Header */}
-        <div className="mb-6">
+        <div className="route-detail__header mb-6">
           <button
             onClick={() => navigate('/routes')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+            className="route-detail__back-button flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="route-detail__back-icon h-5 w-5" />
             Quay lại danh sách tuyến đường
           </button>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-lg shadow-md p-6"
+            className="route-detail__info bg-white rounded-lg shadow-md p-6"
           >
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  <RouteIcon className="h-8 w-8 text-blue-600" />
-                  <h1 className="text-3xl font-bold text-gray-800">{route.name}</h1>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+            <div className="route-detail__info-wrapper flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="route-detail__main flex-1">
+                <div className="route-detail__title flex items-center gap-3 mb-4">
+                  <RouteIcon className="route-detail__icon h-8 w-8 text-blue-600" />
+                  <h1 className="route-detail__name text-3xl font-bold text-gray-800">{route.name}</h1>
+                  <span className="route-detail__code px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
                     {route.code}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-gray-500" />
+                <div className="route-detail__grid grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="route-detail__station flex items-center gap-3">
+                    <MapPin className="route-detail__station-icon h-5 w-5 text-gray-500" />
                     <div>
-                      <p className="text-gray-600">
+                      <p className="route-detail__station-name text-gray-600">
                         <span className="font-medium">Điểm đi:</span> {originStation?.name || 'Đang tải...'}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="route-detail__station-address text-sm text-gray-500">
                         {originStation?.address ? 
                           `${originStation.address.street || ''}, ${originStation.address.ward || ''}, ${originStation.address.district || ''}, ${originStation.address.city || ''}`.replace(/^,\s*|,\s*$|,\s*,/g, '').trim() || 'Chưa có địa chỉ chi tiết'
                           : 'Chưa có thông tin địa chỉ'}
@@ -193,13 +193,13 @@ const RouteDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-gray-500" />
+                  <div className="route-detail__station flex items-center gap-3">
+                    <MapPin className="route-detail__station-icon h-5 w-5 text-gray-500" />
                     <div>
-                      <p className="text-gray-600">
+                      <p className="route-detail__station-name text-gray-600">
                         <span className="font-medium">Điểm đến:</span> {destinationStation?.name || 'Đang tải...'}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="route-detail__station-address text-sm text-gray-500">
                         {destinationStation?.address ? 
                           `${destinationStation.address.street || ''}, ${destinationStation.address.ward || ''}, ${destinationStation.address.district || ''}, ${destinationStation.address.city || ''}`.replace(/^,\s*|,\s*$|,\s*,/g, '').trim() || 'Chưa có địa chỉ chi tiết'
                           : 'Chưa có thông tin địa chỉ'}
@@ -207,7 +207,7 @@ const RouteDetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="route-detail__info-item flex items-center gap-3">
                     <Clock className="h-5 w-5 text-gray-500" />
                     <p className="text-gray-600">
                       <span className="font-medium">Thời gian dự kiến:</span>{' '}
@@ -215,7 +215,7 @@ const RouteDetailPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="route-detail__info-item flex items-center gap-3">
                     <RouteIcon className="h-5 w-5 text-gray-500" />
                     <p className="text-gray-600">
                       <span className="font-medium">Khoảng cách:</span>{' '}
@@ -225,7 +225,7 @@ const RouteDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
+              <div className="route-detail__status flex flex-col items-end gap-2">
                 {getStatusBadge(route.status)}
               </div>
             </div>
@@ -233,8 +233,8 @@ const RouteDetailPage: React.FC = () => {
         </div>
 
         {/* Trips Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        <div className="route-detail__trips mb-6">
+          <h2 className="route-detail__trips-title text-2xl font-bold text-gray-800 mb-4">
             Các chuyến xe ({trips.length})
           </h2>
 
@@ -242,56 +242,56 @@ const RouteDetailPage: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-lg shadow-md p-8 text-center"
+              className="route-detail__no-trips bg-white rounded-lg shadow-md p-8 text-center"
             >
-              <Bus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Hiện tại chưa có chuyến xe nào cho tuyến đường này.</p>
+              <Bus className="route-detail__no-trips-icon h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="route-detail__no-trips-text text-gray-600">Hiện tại chưa có chuyến xe nào cho tuyến đường này.</p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="route-detail__trips-list grid grid-cols-1 gap-4">
               {trips.map((trip, index) => (
                 <motion.div
                   key={trip._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-md p-6 hover:bg-gray-50 transition-all cursor-pointer"
+                  className="route-detail__trip-card bg-white rounded-lg shadow-md p-6 hover:bg-gray-50 transition-all cursor-pointer"
                   whileHover={{ backgroundColor: "#f9fafb" }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="trip-card__content flex items-center justify-between">
                     {/* Trip Info Left */}
-                    <div className="flex items-center gap-6">
+                    <div className="trip-card__info flex items-center gap-6">
                       {/* Bus Image/Icon */}
-                      <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <div className="trip-card__icon w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
                         <Bus className="h-8 w-8 text-blue-600" />
                       </div>
                       
                       {/* Time & Route */}
-                      <div>
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="text-center">
+                      <div className="trip-card__details">
+                        <div className="trip-card__route flex items-center gap-4 mb-2">
+                          <div className="trip-card__station text-center">
                             <div className="text-xl font-bold text-gray-800">{trip.departureTime}</div>
                             <div className="text-sm text-gray-500">{originStation?.name}</div>
                           </div>
                           
-                          <div className="flex items-center gap-2 px-3">
-                            <div className="h-px bg-gray-300 w-8"></div>
-                            <div className="text-sm text-gray-500">{formatDuration(route.estimatedDuration)}</div>
-                            <div className="h-px bg-gray-300 w-8"></div>
+                          <div className="trip-card__duration flex items-center gap-2 px-3">
+                            <div className="trip-card__duration-line h-px bg-gray-300 w-8"></div>
+                            <div className="trip-card__duration-text text-sm text-gray-500">{formatDuration(route.estimatedDuration)}</div>
+                            <div className="trip-card__duration-line h-px bg-gray-300 w-8"></div>
                           </div>
                           
-                          <div className="text-center">
+                          <div className="trip-card__station text-center">
                             <div className="text-xl font-bold text-gray-800">{trip.arrivalTime}</div>
                             <div className="text-sm text-gray-500">{destinationStation?.name}</div>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
+                        <div className="trip-card__bus-info flex items-center gap-4 text-sm text-gray-600">
+                          <div className="trip-card__bus-type flex items-center gap-1">
                             <Bus className="h-4 w-4" />
                             <span>{trip.bus?.busType || 'N/A'}</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="trip-card__license flex items-center gap-1">
                             <span>Biển số: {trip.bus?.licensePlate || 'N/A'}</span>
                           </div>
                         </div>
@@ -299,12 +299,12 @@ const RouteDetailPage: React.FC = () => {
                     </div>
 
                     {/* Price & Book Button */}
-                    <div className="text-right">
+                    <div className="trip-card__booking text-right">
                       <div className="mb-4">
-                        <div className="text-2xl font-bold text-blue-600 mb-1">
+                        <div className="trip-card__price text-2xl font-bold text-blue-600 mb-1">
                           {formatPrice(trip.basePrice)}
                         </div>
-                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        <div className={`trip-card__seats inline-block px-3 py-1 rounded-full text-sm font-medium ${
                           trip.availableSeats > 10
                             ? 'bg-green-100 text-green-800'
                             : trip.availableSeats > 0
@@ -325,7 +325,7 @@ const RouteDetailPage: React.FC = () => {
                             handleBookTrip(trip);
                           }
                         }}
-                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                        className={`trip-card__button px-6 py-3 rounded-lg font-medium transition-colors ${
                           trip.availableSeats > 0 && trip.status !== 'cancelled' && trip.status !== 'completed'
                             ? 'bg-blue-600 text-white hover:bg-blue-700'
                             : 'bg-gray-200 text-gray-500 cursor-not-allowed'
@@ -341,15 +341,15 @@ const RouteDetailPage: React.FC = () => {
 
                   {/* Notes Section */}
                   {(trip.notes || index === 0) && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-4 text-gray-600">
+                    <div className="trip-card__footer mt-4 pt-4 border-t border-gray-100">
+                      <div className="trip-card__footer-content flex items-center justify-between text-sm">
+                        <div className="trip-card__features flex items-center gap-4 text-gray-600">
                           <span>💡 Xác nhận tức thì</span>
                           <span>🎫 Đổi trả tận nơi</span>
                           <span>❌ Không cần thanh toán trước</span>
                         </div>
                         {trip.notes && (
-                          <div className="text-blue-600">
+                          <div className="trip-card__notes text-blue-600">
                             * {trip.notes}
                           </div>
                         )}
