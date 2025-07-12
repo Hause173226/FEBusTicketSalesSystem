@@ -356,6 +356,7 @@ const RouteDetailPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  
                 </motion.div>
               ))}
             </div>
