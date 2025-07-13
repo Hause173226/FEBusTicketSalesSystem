@@ -8,6 +8,7 @@ import { useAppContext } from '../context/AppContext';
 import { searchTrips } from '../services/tripServices';
 import { StationWithCity } from '../types';
 import { getStationsWithCityNames } from '../services/stationServices';
+import { toast } from 'react-hot-toast';
 
 const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { searchParams, updateSearchParams } = useAppContext();
@@ -33,7 +34,7 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
         setStations(data);
       } catch (err) {
         console.error('Failed to fetch stations:', err);
-        alert('Không thể tải danh sách thành phố. Vui lòng thử lại sau.');
+        toast.error('Không thể tải danh sách thành phố. Vui lòng thử lại sau.');
       } finally {
         setIsStationsLoading(false);
       }
@@ -130,7 +131,7 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
     e.preventDefault();
     
     if (!fromCity || !toCity || !departureDate) {
-      alert('Vui lòng điền đầy đủ thông tin tìm kiếm');
+      toast.error('Vui lòng điền đầy đủ thông tin tìm kiếm');
       return;
     }
 
@@ -151,7 +152,7 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
         : stations.find(s => s.name === toCity)?.name;
 
       if (!fromValue || !toValue) {
-        alert('Không tìm thấy thông tin điểm đi hoặc điểm đến. Vui lòng thử lại.');
+        toast.error('Không tìm thấy thông tin điểm đi hoặc điểm đến. Vui lòng thử lại.');
         return;
       }
 
@@ -163,7 +164,7 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
       });
 
       if (result.length === 0) {
-        alert(`Không tìm thấy chuyến xe nào từ ${fromValue} đến ${toValue} vào ngày ${formattedDate}`);
+        toast.error(`Không tìm thấy chuyến xe nào từ ${fromValue} đến ${toValue} vào ngày ${formattedDate}`);
         return;
       }
 
@@ -187,7 +188,7 @@ const SearchForm: React.FC<{ className?: string }> = ({ className = '' }) => {
       });
     } catch (error) {
       console.error('Error searching trips:', error);
-      alert('Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại sau.');
+      toast.error('Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại sau.');
     } finally {
       setIsLoading(false);
     }
