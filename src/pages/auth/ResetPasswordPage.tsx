@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { KeyRound, ArrowRight, AlertCircle, CheckCircle2, RotateCw } from 'lucide-react';
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { userServices } from '../../services/userServices';
+import { validatePassword } from '../../utils/authUtils';
 
 const ResetPasswordPage: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,6 +27,17 @@ const ResetPasswordPage: React.FC = () => {
     navigate('/forgot-password');
     return null;
   }
+
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewPassword(value);
+    if (value) {
+      const { errors } = validatePassword(value);
+      setPasswordErrors(errors);
+    } else {
+      setPasswordErrors([]);
+    }
+  };
 
   const handleResendOTP = async () => {
     try {
@@ -49,13 +65,14 @@ const ResetPasswordPage: React.FC = () => {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+    const { isValid, errors } = validatePassword(newPassword);
+    if (!isValid) {
+      setPasswordErrors(errors);
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+    if (newPassword !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp');
       return;
     }
 
@@ -154,16 +171,33 @@ const ResetPasswordPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <input
-                      type="password"
+                      type={showNewPassword ? "text" : "password"}
                       id="newPassword"
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={handleNewPasswordChange}
+                      className={`w-full p-3 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        passwordErrors.length > 0 ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="••••••••"
-                      minLength={6}
                     />
                     <KeyRound className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showNewPassword ? <FaRegEyeSlash className="h-5 w-5" /> : <FaRegEye className="h-5 w-5" />}
+                    </button>
                   </div>
+                  {passwordErrors.length > 0 && (
+                    <div className="mt-2 text-sm text-red-600">
+                      <ul className="list-disc list-inside space-y-1">
+                        {passwordErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-6">
@@ -172,23 +206,31 @@ const ResetPasswordPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       id="confirmPassword"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full p-3 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        error === 'Mật khẩu xác nhận không khớp' ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="••••••••"
-                      minLength={6}
                     />
                     <KeyRound className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showConfirmPassword ? <FaRegEyeSlash className="h-5 w-5" /> : <FaRegEye className="h-5 w-5" />}
+                    </button>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || passwordErrors.length > 0}
                   className={`w-full py-3 rounded-md transition-colors duration-200 flex items-center justify-center ${
-                    loading
+                    loading || passwordErrors.length > 0
                       ? 'bg-gray-400 cursor-not-allowed'
                       : 'bg-blue-700 hover:bg-blue-800 text-white'
                   }`}

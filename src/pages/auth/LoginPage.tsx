@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { useAppContext } from '../../context/AppContext';
 import { userServices } from '../../services/userServices';
+import { validatePassword } from '../../utils/authUtils';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   
   const { login } = useAppContext();
@@ -18,11 +22,28 @@ const LoginPage: React.FC = () => {
   // Get redirect path from location state or default to home
   const from = location.state?.from || '/';
   
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    if (newPassword) {
+      const { errors } = validatePassword(newPassword);
+      setPasswordErrors(errors);
+    } else {
+      setPasswordErrors([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
       setError('Vui lòng nhập email và mật khẩu');
+      return;
+    }
+
+    const { isValid, errors } = validatePassword(password);
+    if (!isValid) {
+      setPasswordErrors(errors);
       return;
     }
     
@@ -106,15 +127,33 @@ const LoginPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handlePasswordChange}
+                    className={`w-full p-3 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      passwordErrors.length > 0 ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="••••••••"
                   />
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <FaRegEyeSlash className="h-5 w-5" /> : <FaRegEye className="h-5 w-5" />}
+                  </button>
                 </div>
+                {passwordErrors.length > 0 && (
+                  <div className="mt-2 text-sm text-red-600">
+                    <ul className="list-disc list-inside space-y-1">
+                      {passwordErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="flex justify-end mt-1">
                   <Link 
                     to="/forgot-password" 
@@ -127,9 +166,9 @@ const LoginPage: React.FC = () => {
               
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || passwordErrors.length > 0}
                 className={`w-full py-3 rounded-md transition-colors duration-200 flex items-center justify-center ${
-                  loading
+                  loading || passwordErrors.length > 0
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'
                 }`}
