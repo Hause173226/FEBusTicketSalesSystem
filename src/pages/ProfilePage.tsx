@@ -147,7 +147,7 @@ const ProfilePage: React.FC = () => {
       logout();
       navigate('/');
       
-      if (!result.success) {
+      if (!result) {
         // Signout failed but we'll still logout locally
       }
     } catch (error) {

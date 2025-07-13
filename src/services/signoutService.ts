@@ -1,33 +1,30 @@
-import { userServices } from "./userServices";
+import { userServices } from './userServices';
 
 export const signoutService = {
   /**
-   * Handles the complete sign out process
+   * Handle user signout
+   * - Clears local storage
    * - Calls the signout API endpoint
-   * - Clears local storage tokens
-   * - Handles errors gracefully
+   * 
+   * @returns {Promise<boolean>} True if signout successful
    */
   handleSignout: async () => {
-    const token = localStorage.getItem('token');
-    const refreshToken = localStorage.getItem('refreshToken');
-    
-    // If no tokens, just return success
-    if (!token && !refreshToken) {
-      return { success: true };
-    }
-    
     try {
-      // Call the signout API endpoint
+      // Call the signout API endpoint first
       await userServices.signout();
       
+      // Then clear all data from localStorage
+      localStorage.clear();
+
+      // Redirect to login page without showing notification
+      window.location.href = '/login';
+      
+      return true;
     } catch (error) {
-      console.error('Signout error:', error);
-    } finally {
-      // Always clear tokens on logout attempt, regardless of API success
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
+      // Even if API call fails, we still want to clear local storage and redirect
+      localStorage.clear();
+      window.location.href = '/login';
+      return false;
     }
-    
-    return { success: true };
   }
 }; 
