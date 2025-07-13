@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { userServices } from '../../services/userServices';
+import { validatePassword } from '../../utils/authUtils';
 import toast from 'react-hot-toast';
 
 const RegisterPage: React.FC = () => {
@@ -14,7 +16,10 @@ const RegisterPage: React.FC = () => {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
   
@@ -31,6 +36,16 @@ const RegisterPage: React.FC = () => {
         ...errors,
         [name]: '',
       });
+    }
+
+    // Validate password if the field is password
+    if (name === 'password') {
+      if (value) {
+        const { errors } = validatePassword(value);
+        setPasswordErrors(errors);
+      } else {
+        setPasswordErrors([]);
+      }
     }
   };
   
@@ -55,8 +70,12 @@ const RegisterPage: React.FC = () => {
     
     if (!formData.password) {
       newErrors.password = 'Vui lòng nhập mật khẩu';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    } else {
+      const { isValid, errors } = validatePassword(formData.password);
+      if (!isValid) {
+        setPasswordErrors(errors);
+        return false;
+      }
     }
     
     if (formData.password !== formData.confirmPassword) {
@@ -64,7 +83,7 @@ const RegisterPage: React.FC = () => {
     }
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 0 && passwordErrors.length === 0;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -200,19 +219,35 @@ const RegisterPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     className={`w-full p-3 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.password ? 'border-red-500' : 'border-gray-300'
+                      errors.password || passwordErrors.length > 0 ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
                   />
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? <FaRegEyeSlash className="h-5 w-5" /> : <FaRegEye className="h-5 w-5" />}
+                  </button>
                 </div>
                 {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+                {passwordErrors.length > 0 && (
+                  <div className="mt-2 text-sm text-red-600">
+                    <ul className="list-disc list-inside space-y-1">
+                      {passwordErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
               
               <div className="mb-6">
@@ -221,7 +256,7 @@ const RegisterPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     id="confirmPassword"
                     name="confirmPassword"
                     value={formData.confirmPassword}
@@ -232,6 +267,13 @@ const RegisterPage: React.FC = () => {
                     placeholder="••••••••"
                   />
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showConfirmPassword ? <FaRegEyeSlash className="h-5 w-5" /> : <FaRegEye className="h-5 w-5" />}
+                  </button>
                 </div>
                 {errors.confirmPassword && <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>}
               </div>
