@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
-import { Ticket, Calendar, Clock, Ban, CheckCircle, ArrowRight, MapPin, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Ticket, Calendar, Clock, Ban, CheckCircle, ArrowRight, MapPin, X, Bus, CreditCard } from 'lucide-react';
 import { Booking } from '../types';
-import { formatDate, formatPrice } from '../utils/dateUtils';
+import { formatDate, formatPrice, formatTime } from '../utils/dateUtils';
 
 interface TicketCardProps {
   booking: Booking;
 }
 
+
 const TicketCard: React.FC<TicketCardProps> = ({ booking }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
 
-  // Chỉ hiển thị những vé đã thanh toán thành công
-  const isPaymentSuccessful = booking.paymentStatus === 'paid' || booking.paymentStatus === 'success';
-  
-  // Nếu chưa thanh toán thành công thì không hiển thị
-  if (!isPaymentSuccessful) {
-    return null;
-  }
+  const handlePayment = () => {
+    if (booking._id) {
+      navigate(`/payment/vnpay/${booking._id}`);
+    }
+  };
 
   const getStatusDisplay = (bookingStatus: string, paymentStatus: string) => {
     // Ưu tiên hiển thị trạng thái hủy trước
@@ -66,41 +67,47 @@ const TicketCard: React.FC<TicketCardProps> = ({ booking }) => {
         </span>
       );
     }
-    
-    // Mặc định
-    return (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-        <Clock className="h-4 w-4 mr-1" />
-        Chờ xử lý
-      </span>
-    );
+
+    return null;
   };
+
 
   return (
     <>
       {/* Ticket Card */}
-      <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200">
-        <div className="p-4">
-          <div className="flex justify-between items-center">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="p-6">
+          <div className="flex justify-between items-start">
             <div className="flex-1">
               <div 
                 className="cursor-pointer hover:text-blue-700 transition-colors duration-200"
                 onClick={() => setIsModalOpen(true)}
                 title="Click để xem chi tiết"
               >
-                <h3 className="text-base font-semibold text-gray-800 mb-1 flex items-center">
-                  <Ticket className="h-4 w-4 mr-2 text-blue-600" />
-                  Mã đặt vé: {booking.bookingCode}
+                <h3 className="text-lg font-semibold text-gray-900">
+                Mã đặt vé: {booking.bookingCode}
                 </h3>
                 <p className="text-xs text-blue-600 mb-2">👆 Click để xem chi tiết</p>
               </div>
-              <div className="flex items-center text-gray-700 text-sm">
-                <MapPin className="h-3 w-3 mr-1 text-green-600" />
-                <span className="font-medium">{booking.pickupStation.name}</span>
-                <ArrowRight className="h-3 w-3 mx-2 text-gray-400" />
-                <MapPin className="h-3 w-3 mr-1 text-red-600" />
-                <span className="font-medium">{booking.dropoffStation.name}</span>
+              <div className="text-sm text-gray-600">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  <span>Ngày đi: {formatDate(booking.trip?.departureDate)}</span>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span>Giờ khởi hành: {formatTime(booking.trip?.departureTime)}</span>
+                </div>
               </div>
+              {(booking.paymentStatus === 'pending' || booking.bookingStatus === 'pending') && (
+                <button
+                  className="mt-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-200 text-sm font-semibold flex items-center"
+                  onClick={handlePayment}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Thanh toán ngay
+                </button>
+              )}
             </div>
             <div className="text-right ml-4">
               <p className="text-lg font-bold text-blue-600">{formatPrice(booking.totalAmount)}</p>

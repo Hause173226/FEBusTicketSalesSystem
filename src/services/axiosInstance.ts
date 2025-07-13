@@ -43,6 +43,11 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Skip token handling for signout requests
+    if (originalRequest.url?.includes('/users/signout')) {
+      return Promise.reject(error);
+    }
+
     // If error is not 401 or request already retried or is refresh token request, reject
     if (error.response?.status !== 401 || 
         originalRequest._retry || 
