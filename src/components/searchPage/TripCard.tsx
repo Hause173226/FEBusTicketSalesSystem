@@ -5,6 +5,7 @@ import { Trip } from '../../types';
 import { isAuthenticated } from '../../utils/authUtils';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { formatDate } from '../../utils/dateUtils';
 
 interface TripCardProps {
   trip: Trip;
@@ -91,6 +92,26 @@ const TripCard: React.FC<TripCardProps> = ({
               <div className="trip-card__license flex items-center gap-1">
                 <span>Biển số: {trip.bus?.licensePlate || 'N/A'}</span>
               </div>
+              <div className="trip-card__seats flex items-center gap-1">
+                              <span>Ngày đi: {trip.departureDate ? formatDate(trip.departureDate, 'dd/MM/yyyy') : 'N/A'}</span>
+                            </div>
+                            <div className="trip-card__seats flex items-center gap-1">
+                              <span>Ngày đến: {(() => {
+                                if (trip.arrivalDate) {
+                                  return formatDate(trip.arrivalDate, 'dd/MM/yyyy');
+                                }
+                                if (trip.departureDate && trip.departureTime && route.estimatedDuration) {
+                                  // Combine date and time
+                                  const [hour, minute] = trip.departureTime.split(':').map(Number);
+                                  const departure = new Date(trip.departureDate);
+                                  departure.setHours(hour, minute, 0, 0);
+                                  // Add estimated duration (minutes)
+                                  const arrival = new Date(departure.getTime() + route.estimatedDuration * 60000);
+                                  return formatDate(arrival.toISOString(), 'dd/MM/yyyy');
+                                }
+                                return 'N/A';
+                              })()}</span>
+                            </div>
             </div>
           </div>
         </div>

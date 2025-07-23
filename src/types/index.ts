@@ -146,6 +146,7 @@ export interface Trip {
   };
   tripCode: string;
   departureDate: string;
+  arrivalDate: string;
   departureTime: string;
   arrivalTime: string;
   basePrice: number;
@@ -225,6 +226,7 @@ export interface BookingOrderDetails {
       name: string;
     };
     departureDate: string;
+    arrivalDate: string;
     departureTime: string;
     arrivalTime: string;
   };
