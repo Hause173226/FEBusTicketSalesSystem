@@ -6,6 +6,7 @@ import { getTripById } from '../services/tripServices';
 import { useAppContext } from '../context/AppContext';
 import SeatSelection, { SeatSelectionRef } from '../components/SeatSelection';
 import { createBooking } from '../services/bookingServices';
+import BookingSteps from '../components/BookingSteps';
 
 const TEMP_BOOKING_KEY = 'temp_booking_data';
 
@@ -202,6 +203,8 @@ const BookingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12">
       <div className="container mx-auto px-4">
+        <BookingSteps currentStep={3} />
+        
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Đặt vé xe</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

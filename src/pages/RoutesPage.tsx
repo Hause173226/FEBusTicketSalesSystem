@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Clock, ArrowRight, Route as RouteIcon, MapPin, Search, CalendarDays } from 'lucide-react';
 import { Route } from '../types';
 import { getAllRoutes } from '../services/routeServices';
+import BookingSteps from '../components/BookingSteps';
 
 const RoutesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,16 +13,16 @@ const RoutesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
         const data = await getAllRoutes();
         const activeRoutes = data.filter(route => route.status === 'active');
-        // Sort by createdAt initially
+        // Sort by createdAt in descending order (newest first)
         const sortedRoutes = activeRoutes.sort((a, b) => 
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         setRoutes(sortedRoutes);
         setFilteredRoutes(sortedRoutes);
@@ -103,6 +104,8 @@ const RoutesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 pt-24 pb-12">
       <div className="container mx-auto px-4">
+        <BookingSteps currentStep={1} />
+        
         <div className="mb-12 text-center">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}

@@ -7,6 +7,7 @@ import { cancelBooking } from '../services/bookingServices';
 import { seatsServices } from '../services/seatsServices';
 import { toast } from 'react-hot-toast';
 import { formatDateSimple, formatPrice, formatTime } from '../utils/dateUtils';
+import BookingSteps from '../components/BookingSteps';
 
 const BookingConfirmationPage = () => {
   const { bookingId } = useParams();
@@ -209,6 +210,8 @@ const BookingConfirmationPage = () => {
       transition={{ duration: 0.3 }}
     >
       <div className="container mx-auto px-4 max-w-4xl mt-16">
+        <BookingSteps currentStep={4} />
+        
         {/* Header */}
         <div className="mb-6">
           <button

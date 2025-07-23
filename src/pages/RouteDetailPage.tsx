@@ -15,6 +15,8 @@ import { Route, Trip, Station } from '../types';
 import { getRouteById } from '../services/routeServices';
 import { getTripsByRoute } from '../services/tripServices';
 import { getStationById } from '../services/stationServices';
+import BookingSteps from '../components/BookingSteps';
+
 const RouteDetailPage: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
   const navigate = useNavigate();
@@ -153,6 +155,8 @@ const RouteDetailPage: React.FC = () => {
   return (
     <div className="route-detail min-h-screen bg-gray-50 pt-24 pb-12">
       <div className="route-detail__container container mx-auto px-4">
+        <BookingSteps currentStep={2} />
+        
         {/* Header */}
         <div className="route-detail__header mb-6">
           <button
