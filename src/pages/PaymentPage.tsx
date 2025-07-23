@@ -6,6 +6,7 @@ import { useAppContext } from '../context/AppContext';
 import BookingSummary from '../components/BookingSummary';
 import UserForm from '../components/UserForm';
 import PaymentMethods from '../components/PaymentMethods';
+import BookingSteps from '../components/BookingSteps';
 
 const PaymentPage: React.FC = () => {
   const { selectedRoute, selectedSeats, isLoggedIn } = useAppContext();
@@ -50,31 +51,9 @@ const PaymentPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800 mt-4">Thanh toán</h1>
         </div>
         
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center">
-            <div className="relative flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-blue-700 text-white flex items-center justify-center font-semibold z-10">
-                1
-              </div>
-              <div className="absolute top-0 left-0 w-10 h-10 rounded-full border-2 border-blue-700 animate-ping opacity-20"></div>
-            </div>
-            <div className="flex-1 h-1 bg-gray-300 mx-2">
-              <div className={`h-full bg-blue-700 ${step === 'payment' ? 'w-full' : 'w-0'} transition-all duration-500`}></div>
-            </div>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-              step === 'payment' ? 'bg-blue-700 text-white' : 'bg-gray-200 text-gray-500'
-            }`}>
-              2
-            </div>
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-sm font-medium text-blue-700">Thông tin hành khách</span>
-            <span className={`text-sm font-medium ${step === 'payment' ? 'text-blue-700' : 'text-gray-500'}`}>Thanh toán</span>
-          </div>
-        </div>
+        <BookingSteps currentStep={4} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-2">
             <motion.div
               key={step}
