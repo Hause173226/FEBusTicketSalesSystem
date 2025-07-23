@@ -311,7 +311,7 @@ const BookingPage: React.FC = () => {
 
               <div className="p-4">
                 <div className="flex justify-center w-full">
-                  <div className="w-full max-w-[340px]"> {/* Match width with sidebar and button */}
+                  <div className="w-full max-w-[420px]"> {/* Increased width to fix seat visibility */}
                     <SeatSelection 
                       ref={seatSelectionRef}
                       tripId={trip._id}
